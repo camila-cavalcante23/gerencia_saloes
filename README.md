@@ -1,16 +1,24 @@
-# React + Vite
+# Sistema de Gerenciamento para Empreendedores Locais, com Foco em Salões
+Um sistema web simples e intuitivo focado em auxiliar empreendedores locais (donos de salão) que atualmente usam métodos analógicos (cadernos) para gerenciamento. O foco é a extrema simplicidade de uso, visto que o usuário-alvo pode não possuir conhecimento técnico avançado.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este projeto é desenvolvido como parte da disciplina de Projeto Integrador IV da Universidade Federal do Ceará. O objetivo é aplicar os conhecimentos adquiridos em um sistema web que solucione um problema real da comunidade
 
-Currently, two official plugins are available:
+##  Funcionalidades Principais
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+O sistema é focado em um **único usuário (o Dono)** para simplificar o controle total do negócio:
 
-## React Compiler
+* **Dashboard (Tela Inicial):** Exibe a **Agenda do Dia** com todos os serviços marcados.
+* **Gestão de Atendimentos:**
+    * Adicionar serviços (agendados ou "encaixes").
+    * Marcar serviços como "Concluído" ou "Não Compareceu".
+* **Controle de Serviços:** Cadastro prévio de tipos de serviço (Ex: Corte, Barba, Escova...) e seus valores.
+* **Fechamento Diário:** Botão "Finalizar Dia" que calcula o **faturamento bruto** (soma dos serviços concluídos).
+* **Gestão de Custos:**
+    * Registro de despesas (produtos, aluguel, contas).
+    * Cadastro de funcionários e seus salários (usado apenas para o cálculo de despesas).
+* **Relatório de Lucro:**
+    * Painel financeiro (com filtros de dia, mês e ano) que mostra:
+    * `(+) Faturamento Total`
+    * `(-) Custos Totais`
+    * `(=) Lucro Líquido`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
