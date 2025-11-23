@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivos de ambiente (Segurança)
+.env
+.env.test
+.env.production
+
+# Arquivos de sistema (Windows)
+Thumbs.db
