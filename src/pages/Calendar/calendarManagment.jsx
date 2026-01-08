@@ -137,8 +137,8 @@ function CalendarManagment() {
   const currentDay = currentDate.getDate();
   const days = getDaysInMonth(currentDate);
 
-  return (
-    <div className="calendar-page">
+ return (
+    <div className="dashboard-page">
       <header className="header-nav">
         <div className="logo-section">
           <div className="logo-icon">
@@ -150,13 +150,17 @@ function CalendarManagment() {
           </div>
         </div>
         <nav className="main-nav">
-          <a href="/" className="nav-item">
+          <a href="/" className="nav-item active">
             <Home size={20} />
             <span>Hoje</span>
           </a>
-          <a href="/agenda" className="nav-item active">
+          <a href="/agenda" className="nav-item">
             <Calendar size={20} />
             <span>Agenda</span>
+          </a>
+           <a href="/services" className="nav-item">
+            <User size={20} />
+            <span>Serviços</span>
           </a>
           <a href="/custos" className="nav-item">
             <DollarSign size={20} />

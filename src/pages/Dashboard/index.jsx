@@ -10,12 +10,13 @@ import {
   Zap,
   Star,
   Trash2,
+  Briefcase,
 } from "lucide-react";
 import "./dashboard.css";
 
 function Dashboard() {
   const [services] = useState([
-    {
+    {       
       id: 1,
       time: "10:00",
       client: "Mila",
@@ -91,6 +92,11 @@ function Dashboard() {
           <a href="/agenda" className="nav-item">
             <Calendar size={20} />
             <span>Agenda</span>
+          </a>
+           
+          <a href="/servicos" className="nav-item">
+            <Briefcase size={20} />
+            <span>Serviços</span>
           </a>
           <a href="/custos" className="nav-item">
             <DollarSign size={20} />

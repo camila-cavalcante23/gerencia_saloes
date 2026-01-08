@@ -88,7 +88,6 @@
 .nav-item span {
   font-size: 0.875rem;
 }
-
 .main-content {
   flex: 1;
   display: flex;
@@ -97,7 +96,9 @@
   width: 100%;
   margin: 0 auto;
   padding: 1rem 1.5rem;
-  overflow: hidden;
+  overflow-y: auto;   
+  overflow-x: hidden; 
+  min-height: 0; 
 }
 
 .page-title-section {
