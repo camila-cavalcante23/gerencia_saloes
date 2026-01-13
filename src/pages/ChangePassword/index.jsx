@@ -22,7 +22,7 @@ const ChangePassword = () => {
     <div className="login-container">
       <div className="login-card" style={{ maxWidth: '450px' }}> 
         
-        {/* Cabeçalho Pequeno */}
+  
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem' }}>
             <div style={{ background: '#e0e7ff', padding: '6px', borderRadius: '8px' }}>
                 <Scissors size={20} color="#4f46e5" />
@@ -37,7 +37,7 @@ const ChangePassword = () => {
 
         <form onSubmit={handleSubmit}>
           
-          {/* Senha Atual */}
+       
           <div className="input-group">
             <label htmlFor="current" style={{fontWeight: 'bold'}}>Senha Atual</label>
             <input 
@@ -50,7 +50,7 @@ const ChangePassword = () => {
             />
           </div>
 
-          {/* Nova Senha */}
+    
           <div className="input-group">
             <label htmlFor="new" style={{fontWeight: 'bold'}}>Nova Senha</label>
             <input 
@@ -63,7 +63,7 @@ const ChangePassword = () => {
             />
           </div>
 
-          {/* Confirmar Nova Senha */}
+      
           <div className="input-group">
             <label htmlFor="confirm" style={{fontWeight: 'bold'}}>Confirme Nova Senha</label>
             <input 

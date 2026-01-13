@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import "./dashboard.css";
 
+import Navbar from "../../components/Navbar"; 
+
 function Dashboard() {
   const [services] = useState([
     {       
@@ -74,44 +76,8 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <header className="header-nav">
-        <div className="logo-section">
-          <div className="logo-icon">
-            <Calendar size={24} />
-          </div>
-          <div className="logo-text">
-            <h1>Meu Salão</h1>
-            <p>Gestão Simples</p>
-          </div>
-        </div>
-        <nav className="main-nav">
-          <a href="/" className="nav-item active">
-            <Home size={20} />
-            <span>Hoje</span>
-          </a>
-          <a href="/agenda" className="nav-item">
-            <Calendar size={20} />
-            <span>Agenda</span>
-          </a>
-           
-          <a href="/servicos" className="nav-item">
-            <Briefcase size={20} />
-            <span>Serviços</span>
-          </a>
-          <a href="/custos" className="nav-item">
-            <DollarSign size={20} />
-            <span> Custos</span>
-          </a>
-          <a href="/lucro" className="nav-item">
-            <TrendingUp size={20} />
-            <span>Lucro</span>
-          </a>
-          <a href="/perfil" className="nav-item">
-            <User size={20} />
-            <span>Perfil</span>
-          </a>
-        </nav>
-      </header>
+      
+      <Navbar />
 
       <main className="dashboard-main">
         <div className="dashboard-header">

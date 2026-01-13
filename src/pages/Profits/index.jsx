@@ -1,73 +1,29 @@
 import React, { useState } from 'react';
 import { 
-  Home, 
-  Calendar, 
-  DollarSign, 
   TrendingUp, 
-  User, 
   TrendingDown, 
   Calculator,
   CheckCircle,
-  BarChart3,
-  Briefcase 
+  BarChart3
 } from 'lucide-react';
 import './Profits.css';
+
+
+import Navbar from '../../components/Navbar';
 
 const Profits = () => {
   const [timeFilter, setTimeFilter] = useState('month'); 
 
   return (
     <div className="profits-page">
-  
-      <header className="header-nav">
-        <div className="logo-section">
-          <div className="logo-icon">
-            <Calendar size={24} color="#fff" />
-          </div>
-          <div className="logo-text">
-            <h1>Meu Salão</h1>
-            <p>Gestão Simples</p>
-          </div>
-        </div>
-        <nav className="main-nav">
-          <a href="/" className="nav-item">
-            <Home size={20} />
-            <span>Hoje</span>
-          </a>
-          <a href="/agenda" className="nav-item">
-            <Calendar size={20} />
-            <span>Agenda</span>
-          </a>
-          
       
-          <a href="/servicos" className="nav-item">
-            <Briefcase size={20} />
-            <span>Serviços</span>
-          </a>
+    
+      <Navbar />
 
-          <a href="/custos" className="nav-item">
-            <DollarSign size={20} />
-            <span>Custos</span>
-          </a>
-          
-          <a href="/lucro" className="nav-item active">
-            <TrendingUp size={20} />
-            <span>Lucro</span>
-          </a>
-          <a href="/perfil" className="nav-item">
-            <User size={20} />
-            <span>Perfil</span>
-          </a>
-        </nav>
-      </header>
-
-  
       <main className="main-content">
         
-       
         <div className="content-wrapper">
 
-          
             <div className="page-header-row">
               <div className="title-area">
                 <div className="title-icon-box purple">
@@ -101,10 +57,9 @@ const Profits = () => {
               </div>
             </div>
 
-          
             <div className="profit-cards-grid">
               
-             
+           
               <div className="profit-card green-theme">
                 <div className="card-header">
                   <div className="card-icon-box">
@@ -116,7 +71,7 @@ const Profits = () => {
                 <p className="card-subtext">0 serviços concluídos</p>
               </div>
 
-             
+            
               <div className="profit-card red-theme">
                 <div className="card-header">
                   <div className="card-icon-box">
@@ -147,12 +102,11 @@ const Profits = () => {
               </div>
             </div>
 
-          
             <div className="formula-section">
               <h3>Fórmula do Cálculo</h3>
               
               <div className="calculation-box">
-               
+              
                 <div className="calc-row">
                   <span className="calc-label">Faturamento (serviços Concluídos)</span>
                   <span className="calc-value bold">+ R$ 0.00</span>
@@ -160,7 +114,7 @@ const Profits = () => {
 
                 <div className="divider-line"></div>
 
-                
+               
                 <div className="calc-row">
                   <span className="calc-label">Despesas Gerais</span>
                   <span className="calc-value">-R$ 0.00</span>
@@ -172,7 +126,7 @@ const Profits = () => {
 
                 <div className="divider-line"></div>
 
-               
+            
                 <div className="result-row">
                   <span className="result-label">Resultado Final (Lucro)</span>
                   <span className="result-value">= R$ 0.00</span>

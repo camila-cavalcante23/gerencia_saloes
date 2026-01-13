@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { 
-  Home, 
-  Calendar, 
   DollarSign, 
-  TrendingUp, 
-  User, 
   Plus, 
   Receipt, 
-  Users,
-  Briefcase 
+  Users
 } from 'lucide-react';
 import './Costs.css';
+
+
+import Navbar from '../../components/Navbar';
 
 const Costs = () => {
   const [timeFilter, setTimeFilter] = useState('month');
@@ -19,55 +17,12 @@ const Costs = () => {
   return (
     <div className="costs-page">
     
-      <header className="header-nav">
-        <div className="logo-section">
-          <div className="logo-icon">
-            <Calendar size={24} color="#fff" />
-          </div>
-          <div className="logo-text">
-            <h1>Meu Salão</h1>
-            <p>Gestão Simples</p>
-          </div>
-        </div>
-        <nav className="main-nav">
-          <a href="/" className="nav-item">
-            <Home size={20} />
-            <span>Hoje</span>
-          </a>
-          <a href="/agenda" className="nav-item">
-            <Calendar size={20} />
-            <span>Agenda</span>
-          </a>
-
-         
-          <a href="/servicos" className="nav-item">
-            <Briefcase size={20} />
-            <span>Serviços</span>
-          </a>
-
-          {/* Item Ativo */}
-          <a href="/custos" className="nav-item active">
-            <DollarSign size={20} />
-            <span>Custos</span>
-          </a>
-          <a href="/lucro" className="nav-item">
-            <TrendingUp size={20} />
-            <span>Lucro</span>
-          </a>
-          <a href="/perfil" className="nav-item">
-            <User size={20} />
-            <span>Perfil</span>
-          </a>
-        </nav>
-      </header>
-
-     
+      <Navbar />
+      
       <main className="main-content">
         
-       
         <div className="content-wrapper">
 
-          
             <div className="page-header-row">
               <div className="title-area">
                 <div className="title-icon-box">

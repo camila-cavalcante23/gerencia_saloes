@@ -9,47 +9,9 @@
 }
 
 
-.header-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #eee;
-  flex-shrink: 0;
-}
-
-.logo-section { display: flex; align-items: center; gap: 1rem; }
-.logo-icon {
-  width: 40px; height: 40px; background-color: #5DCC96; 
-  border-radius: 8px; display: flex; align-items: center; justify-content: center;
-}
-.logo-text h1 { margin: 0; font-size: 1.1rem; color: #333; }
-.logo-text p { margin: 0; font-size: 0.75rem; color: #666; }
-
-.main-nav { display: flex; gap: 0.5rem; }
-.nav-item {
-  display: flex; align-items: center; gap: 0.4rem;
-  padding: 0.5rem 0.75rem; border-radius: 8px;
-  text-decoration: none; color: #333; font-size: 0.85rem; font-weight: 500;
-}
-
-.nav-item.active { background-color: #5DCC96; color: white; }
-
-
-.main-content {
-  flex: 1;
-  padding: 2rem;
-  max-width: 1000px;
-  width: 100%;
-  margin: 0 auto;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
-
 .costs-page .main-content {
   flex: 1;
-  width: 100%;        
+  width: 100%;       
   max-width: none;    
   margin: 0;          
   padding: 0;         
@@ -59,12 +21,13 @@
 
 
 .costs-page .content-wrapper {
-  max-width: 1000px;
+  max-width: 1000px; 
   width: 100%;
   margin: 0 auto;     
   padding: 2rem;      
   box-sizing: border-box;
 }
+
 
 
 .page-header-row {
@@ -83,12 +46,10 @@
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
 }
-
 .title-icon-box svg { stroke: #000; }
 
 .title-area h2 { margin: 0; font-size: 1.8rem; color: #111; }
 .title-area p { margin: 0; font-size: 0.9rem; color: #666; font-weight: 500; }
-
 
 .filter-group {
   display: flex;
@@ -110,7 +71,6 @@
 }
 .filter-btn:last-child { border-right: none; }
 .filter-btn:hover { background-color: #f9f9f9; }
-
 
 .filter-btn.active {
   background-color: #FF6B4A; 
@@ -214,4 +174,35 @@
   color: #888;
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+
+@media (max-width: 768px) {
+  .costs-page .content-wrapper {
+    padding: 1rem;
+  }
+
+
+  .summary-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .page-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .filter-group {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .filter-btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.85rem;
+  }
 }
