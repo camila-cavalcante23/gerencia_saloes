@@ -25,7 +25,7 @@ function App() {
         <Route path="/custos" element={<Costs />} />
         <Route path="/lucro" element={<Profits />} />
         <Route path="/perfil" element={<Profile />} />
-        <Route path="/services" element={<Services />} />
+        <Route path="/servicos" element={<Services />} />
         <Route path="/perfil-funcionario" element={<EmployeeProfile />} />
       </Routes>
     </BrowserRouter>
