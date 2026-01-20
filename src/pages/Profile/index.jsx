@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   User,
   Lock,
@@ -8,6 +9,14 @@ import "./profile.css";
 import Navbar from "../../components/Navbar";
 
 function Profile() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+
+    navigate('/');
+  };
   return (
     <div className="profile-page">
       
@@ -92,7 +101,7 @@ function Profile() {
             </section>
 
             <section className="logout-section">
-              <button className="logout-button" type="button">
+              <button className="logout-button" type="button" onClick={handleLogout}>
                 <LogOut size={18} />
                 <span>Sair da Conta</span>
               </button>

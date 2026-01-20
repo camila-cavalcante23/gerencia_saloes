@@ -1,18 +1,44 @@
 
 import React, { useState } from 'react';
 import { Mail, Lock, Scissors, Eye, EyeOff } from 'lucide-react'; 
-
-import { Link } from 'react-router-dom'; 
+import { Link, useNavigate } from 'react-router-dom'; 
+import api from '../../services/axios';
 import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Logando...", email, password);
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await api.post('/Usuario/login', {
+        email,
+        senha: password
+      });
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      if (response.data.usuario) {
+        localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+      }
+      navigate('/dashboard');
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 
+        err.response?.data?.erro || 
+        'Erro ao fazer login. Verifique suas credenciais.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,13 +96,30 @@ const Login = () => {
             </div>
           </div>
 
+          {error && (
+            <div style={{ 
+              color: '#ef4444', 
+              fontSize: '0.875rem', 
+              marginBottom: '1rem',
+              textAlign: 'center',
+              padding: '0.5rem',
+              backgroundColor: '#fee2e2',
+              borderRadius: '4px'
+            }}>
+              {error}
+            </div>
+          )}
         
-             <Link to="/forgot-password" className="forgot-password">
-               Esqueceu a senha?
-            </Link>
+          <Link to="/forgot-password" className="forgot-password">
+            Esqueceu a senha?
+          </Link>
 
-          <button type="submit" className="login-button">
-            Entrar no Sistema
+          <button 
+            type="submit" 
+            className="login-button"
+            disabled={loading}
+          >
+            {loading ? 'Entrando...' : 'Entrar no Sistema'}
           </button>
 
           
