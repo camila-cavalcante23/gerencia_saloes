@@ -35,7 +35,7 @@
 
 .dashboard-title-icon {
   width: 64px; height: 64px;
-  background-color: #73c4a5;
+  background-color: #059669;
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   color: #ffffff;
@@ -62,7 +62,7 @@
 
 .summary-icon {
   width: 56px; height: 56px;
-  background-color: #73c4a5;
+   background-color: #059669;
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   color: #ffffff;
@@ -115,9 +115,8 @@
 }
 
 .service-time-icon {
-  width: 70px; 
-  height: 70px;
-  background-color: #10B981;
+  width: 80px; height: 80px;
+   background-color: #059669;
   border-radius: 12px;
   display: flex; 
   flex-direction: column; 
@@ -268,44 +267,152 @@
   background-color: #DC2626; 
 }
 
+.action-buttons {
+  display: flex;
+  justify-content: center; 
+  align-items: center;
+  gap: 1rem; 
+  margin-bottom: 2rem;
+  flex-wrap: wrap; 
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem; 
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+}
+
+
+.action-btn.primary {
+  background-color: #4a9eff;
+  color: #ffffff;
+}
+.action-btn.primary:hover {
+  background-color: #3a8eef;
+  transform: translateY(-2px); 
+  box-shadow: 0 4px 10px rgba(74, 158, 255, 0.3);
+}
+
+.action-btn.secondary {
+  background-color: #ff8c42;
+  color: #ffffff;
+}
+.action-btn.secondary:hover {
+  background-color: #ef7c32;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(255, 140, 66, 0.3);
+}
+
+.action-btn.tertiary {
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #e0e0e0;
+}
+.action-btn.tertiary:hover {
+  background-color: #f9f9f9;
+  border-color: #ccc;
+  transform: translateY(-2px);
+}
+
 
 @media (max-width: 768px) {
- 
+  
+  
   .summary-cards {
     grid-template-columns: 1fr;
   }
 
-
+  
   .action-buttons {
     flex-direction: column;
+    width: 100%;
+    gap: 0.8rem;
   }
 
   .action-btn {
+    width: 100%;
     justify-content: center;
+    padding: 1rem; 
+    font-size: 1rem;
   }
 
-  
+
   .service-card {
-    flex-direction: column;
+    flex-direction: column; 
     align-items: flex-start;
     gap: 1rem;
+    height: auto;
+    padding: 1.2rem;
   }
 
   .service-time-icon {
-    width: 100%;
+    width: 50%;
     height: 60px;
     flex-direction: row;
     gap: 10px;
   }
 
-  .service-actions {
+  .service-info {
     width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 0.5rem;
   }
 
+
+  .service-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column; 
+    align-items: stretch;
+    margin-left: 0;
+    padding-top: 1rem;
+    border-top: 1px solid #f0f0f0;
+    gap: 1rem;
+  }
+
+
+  .service-value {
+    width: 100%;
+    display: flex;
+    flex-direction: row; 
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    margin-right: 0;
+    padding: 0 0.2rem;
+  }
+
+  .value-label { 
+    margin-bottom: 0; 
+    font-size: 0.9rem; 
+  }
+  
+  .value-amount { 
+    font-size: 1.1rem; 
+    font-weight: bold; 
+  }
+
+
   .service-buttons {
-    flex-direction: row;
+    display: flex;
+    flex-direction: column; 
+    width: 100%;
+    gap: 0.8rem;
+  }
+
+  
+  .service-buttons button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.8rem;
   }
 }

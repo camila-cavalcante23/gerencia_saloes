@@ -10,8 +10,9 @@ import {
 } from 'lucide-react';
 import './Costs.css';
 
-
 import Navbar from '../../components/Navbar';
+import NewExpenseModal from '../../components/NewExpenseModal';
+import NewEmployeeModal from '../../components/NewEmployeeModal';
 
 const Costs = () => {
   const getTodayDate = () => {
@@ -122,13 +123,12 @@ const Costs = () => {
 
   return (
     <div className="costs-page">
-    
       <Navbar />
       
       <main className="main-content">
-        
         <div className="content-wrapper">
 
+           
             <div className="page-header-row">
               <div className="title-area">
                 <div className="title-icon-box">
@@ -139,22 +139,21 @@ const Costs = () => {
                   <p>Controle suas despesas</p>
                 </div>
               </div>
-
               <div className="filter-group">
                 <button 
-                  className={`filter-btn ${timeFilter === 'today' ? 'active' : ''}`}
+                  className={`filter-btn ${timeFilter === 'today' ? 'active' : ''}`} 
                   onClick={() => setTimeFilter('today')}
                 >
                   Hoje
                 </button>
                 <button 
-                  className={`filter-btn ${timeFilter === 'month' ? 'active' : ''}`}
+                  className={`filter-btn ${timeFilter === 'month' ? 'active' : ''}`} 
                   onClick={() => setTimeFilter('month')}
                 >
                   Este Mês
                 </button>
                 <button 
-                  className={`filter-btn ${timeFilter === 'year' ? 'active' : ''}`}
+                  className={`filter-btn ${timeFilter === 'year' ? 'active' : ''}`} 
                   onClick={() => setTimeFilter('year')}
                 >
                   Este Ano
@@ -162,37 +161,29 @@ const Costs = () => {
               </div>
             </div>
 
-       
+         
             <div className="summary-cards-grid">
               <div className="cost-card">
                 <p className="card-label">Despesas Gerais</p>
-                <h3 className="card-value red">R$ 0.00</h3>
+                <h3 className="card-value red">{formatCurrency(totalExpensesValue)}</h3>
               </div>
               <div className="cost-card">
-                <p className="card-label">Salários</p>
-                <h3 className="card-value red">R$ 0.00</h3>
+                <p className="card-label">Salários {timeFilter === 'year' ? '(Anual)' : ''}</p>
+                <h3 className="card-value red">{formatCurrency(totalSalariesValue)}</h3>
               </div>
               <div className="cost-card">
                 <p className="card-label">Total Geral</p>
-                <h3 className="card-value black">R$ 0.00</h3>
+                <h3 className="card-value black">{formatCurrency(grandTotalValue)}</h3>
               </div>
             </div>
 
-         
+        
             <div className="tabs-container">
-              <button 
-                className={`tab-btn ${activeTab === 'expenses' ? 'active' : ''}`}
-                onClick={() => setActiveTab('expenses')}
-              >
-                <Receipt size={18} />
-                Despesas Gerais
+              <button className={`tab-btn ${activeTab === 'expenses' ? 'active' : ''}`} onClick={() => setActiveTab('expenses')}>
+                <Receipt size={18} /> Despesas Gerais
               </button>
-              <button 
-                className={`tab-btn ${activeTab === 'employees' ? 'active' : ''}`}
-                onClick={() => setActiveTab('employees')}
-              >
-                <Users size={18} />
-                Funcionários
+              <button className={`tab-btn ${activeTab === 'employees' ? 'active' : ''}`} onClick={() => setActiveTab('employees')}>
+                <Users size={18} /> Funcionários
               </button>
             </div>
 
@@ -255,7 +246,6 @@ const Costs = () => {
             )}
 
         </div> 
-
       </main>
 
       {/* Modal Nova Despesa */}
