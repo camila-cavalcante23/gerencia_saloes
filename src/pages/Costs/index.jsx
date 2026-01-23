@@ -11,8 +11,6 @@ import {
 import './Costs.css';
 
 import Navbar from '../../components/Navbar';
-import NewExpenseModal from '../../components/NewExpenseModal';
-import NewEmployeeModal from '../../components/NewEmployeeModal';
 
 const Costs = () => {
   const getTodayDate = () => {
@@ -119,7 +117,24 @@ const Costs = () => {
 
   const handleDeleteExpense = (id) => {
     setExpenses(expenses.filter(expense => expense.id !== id));
-  }; 
+  };
+
+  const formatCurrency = (value) => {
+    if (typeof value === 'number') {
+      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return value || 'R$ 0,00';
+  };
+
+  const totalExpensesValue = expenses.reduce((acc, expense) => {
+    if (!expense || !expense.value) return acc;
+    const valueString = expense.value.toString().replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+    return acc + (parseFloat(valueString) || 0);
+  }, 0);
+
+  const totalSalariesValue = 0;
+
+  const grandTotalValue = totalExpensesValue + totalSalariesValue; 
 
   return (
     <div className="costs-page">
