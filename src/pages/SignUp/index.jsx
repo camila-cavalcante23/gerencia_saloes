@@ -1,30 +1,52 @@
 
 import React, { useState } from 'react';
 import { Mail, Lock, UserPlus, ArrowLeft, Eye, EyeOff, Scissors } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; 
-import '../Login/Login.css'; 
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../../services/axios';
+import '../Login/Login.css';
 
 const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setError('');
 
     if (password !== confirmPassword) {
-      alert("As senhas não coincidem!");
+      setError("As senhas não coincidem!");
       return;
     }
 
-    console.log("Cadastrando:", email, password);
-    
+    if (password.length < 6) {
+      setError("A senha deve ter no mínimo 6 caracteres.");
+      return;
+    }
 
-    alert("Cadastro realizado com sucesso!");
-    navigate('/'); 
+    setLoading(true);
+
+    try {
+      const response = await api.post('/Usuario/cadastro-admin', {
+        Email: email,
+        Senha: password
+      });
+
+      alert("Cadastro realizado com sucesso!");
+      navigate('/');
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+        err.response?.data?.erro ||
+        'Erro ao realizar cadastro. Tente novamente.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,7 +65,20 @@ const SignUp = () => {
         </div>
 
         <form onSubmit={handleSubmit}>
-          
+          {error && (
+            <div style={{
+              backgroundColor: '#ffecec',
+              border: '1px solid #f4b7b7',
+              color: '#e55353',
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              fontSize: '0.9rem'
+            }}>
+              {error}
+            </div>
+          )}
+
           {/* E-mail */}
           <div className="input-group">
             <label htmlFor="email">E-mail</label>
@@ -102,8 +137,8 @@ const SignUp = () => {
             </div>
           </div>
 
-          <button type="submit" className="login-button">
-            Cadastrar
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? 'Cadastrando...' : 'Cadastrar'}
           </button>
         </form>
 
