@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   Plus, 
@@ -6,10 +6,11 @@ import {
   Users,
   X,
   Save,
-  Trash2
+  Trash2,
+  Calendar
 } from 'lucide-react';
 import './Costs.css';
-
+import api from '../../services/axios'; 
 import Navbar from '../../components/Navbar';
 
 const Costs = () => {
@@ -25,18 +26,45 @@ const Costs = () => {
   const [activeTab, setActiveTab] = useState('expenses');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('expense');
+  
   const [expenses, setExpenses] = useState([]);
+  const [employees, setEmployees] = useState([]); 
+
   const [formData, setFormData] = useState({
     description: '',
     value: '',
     date: getTodayDate()
   });
+
   const [employeeFormData, setEmployeeFormData] = useState({
     name: '',
     salary: '',
     phone: '',
     admissionDate: getTodayDate()
   });
+
+  const loadData = async () => {
+    try {
+      const despesasResponse = await api.get('/Despesa'); 
+      setExpenses(despesasResponse.data);
+
+      const funcionariosResponse = await api.get('/Funcionario'); 
+      setEmployees(funcionariosResponse.data);
+    } catch (error) {
+      console.error("Erro ao buscar dados", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []); 
+
+  const currencyToNumber = (valueStr) => {
+    if (!valueStr) return 0;
+    if (typeof valueStr === 'number') return valueStr;
+    const cleanStr = valueStr.replace(/\D/g, ''); 
+    return parseFloat(cleanStr) / 100;
+  };
 
   const handleOpenModal = (type) => {
     setModalType(type);
@@ -46,35 +74,20 @@ const Costs = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     if (modalType === 'expense') {
-      setFormData({ 
-        description: '', 
-        value: '',
-        date: getTodayDate()
-      });
+      setFormData({ description: '', value: '', date: getTodayDate() });
     } else {
-      setEmployeeFormData({
-        name: '',
-        salary: '',
-        phone: '',
-        admissionDate: getTodayDate()
-      });
+      setEmployeeFormData({ name: '', salary: '', phone: '', admissionDate: getTodayDate() });
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleEmployeeInputChange = (e) => {
     const { name, value } = e.target;
-    setEmployeeFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setEmployeeFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const formatValue = (value) => {
@@ -85,54 +98,136 @@ const Costs = () => {
       maximumFractionDigits: 2
     });
   };
-
+  
   const formatDateToBR = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
+    if (dateString.startsWith('0001')) return 'Data Pendente';
+    
+    const datePart = dateString.toString().split('T')[0]; 
+    const [year, month, day] = datePart.split('-');
+    return `${day}/${month}/${year}`;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (formData.description && formData.value) {
-      const formattedValue = formatValue(formData.value);
-      const formattedDate = formatDateToBR(formData.date);
-      const newExpense = {
-        id: Date.now(),
-        name: formData.description,
-        value: formattedValue,
-        date: formattedDate,
-        category: formData.description
-      };
-      setExpenses([...expenses, newExpense]);
-      handleCloseModal();
+      try {
+        const payload = {
+          descricao: formData.description, 
+          valor: currencyToNumber(formData.value), 
+          dataDespesa: formData.date,
+          categoria: "Geral" 
+        };
+
+        await api.post('/Despesa', payload);
+        await loadData(); 
+        handleCloseModal();
+        alert("Despesa salva com sucesso!");
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao salvar despesa");
+      }
     }
   };
-
-  const handleSaveEmployee = () => {
+  
+  const handleSaveEmployee = async () => {
     if (employeeFormData.name && employeeFormData.salary) {
-      console.log('Salvando funcionário:', employeeFormData);
-      handleCloseModal();
+      try {
+        const payload = {
+          nome: employeeFormData.name,
+          salario: currencyToNumber(employeeFormData.salary), 
+          telefone: employeeFormData.phone,
+          dataAdmissao: employeeFormData.admissionDate
+        };
+
+        await api.post('/Funcionario', payload);
+        await loadData(); 
+        handleCloseModal();
+        alert("Funcionário salvo com sucesso!");
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao salvar funcionário");
+      }
     }
   };
 
-  const handleDeleteExpense = (id) => {
-    setExpenses(expenses.filter(expense => expense.id !== id));
+  const handleDeleteExpense = async (id) => {
+    if(window.confirm("Excluir despesa?")) {
+      try {
+        await api.delete(`/Despesa/${id}`);
+        setExpenses(expenses.filter(expense => expense.idDespesa !== id));
+      } catch (error) {
+        alert("Erro ao excluir");
+      }
+    }
+  };
+
+  const handleDeleteEmployee = async (id) => {
+    if(window.confirm("Excluir funcionário?")) {
+      try {
+       
+        await api.delete(`/Funcionario/${id}`);
+    
+        setEmployees(employees.filter(emp => emp.idFuncionario !== id));
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao excluir");
+      }
+    }
   };
 
   const formatCurrency = (value) => {
-    if (typeof value === 'number') {
-      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    let num = value;
+    if (typeof value === 'string') {
+        num = parseFloat(value);
     }
-    return value || 'R$ 0,00';
+    if (isNaN(num)) return 'R$ 0,00';
+    return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const totalExpensesValue = expenses.reduce((acc, expense) => {
-    if (!expense || !expense.value) return acc;
-    const valueString = expense.value.toString().replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-    return acc + (parseFloat(valueString) || 0);
+  const checkFilter = (dataString) => {
+    if (!dataString) return true;
+    if (dataString.startsWith('0001')) return true;
+
+    const dataItem = dataString.toString().split('T')[0]; 
+    
+    const hojeObj = new Date();
+    const anoAtual = hojeObj.getFullYear();
+    const mesAtual = String(hojeObj.getMonth() + 1).padStart(2, '0');
+    const diaAtual = String(hojeObj.getDate()).padStart(2, '0');
+
+    const stringHoje = `${anoAtual}-${mesAtual}-${diaAtual}`;
+    const stringMes = `${anoAtual}-${mesAtual}`;
+    const stringAno = `${anoAtual}`;
+    
+    if (timeFilter === 'today') return dataItem === stringHoje;
+    if (timeFilter === 'month') return dataItem.startsWith(stringMes);
+    if (timeFilter === 'year') return dataItem.startsWith(stringAno);
+    return true;
+  };
+
+  const filteredExpenses = expenses.filter(expense => {
+      const data = expense.dataDespesa || expense.DataDespesa;
+      return checkFilter(data);
+  });
+
+  const totalExpensesValue = filteredExpenses.reduce((acc, expense) => {
+    const val = typeof expense.valor === 'number' ? expense.valor : parseFloat(expense.value || 0);
+    return acc + val;
   }, 0);
 
-  const totalSalariesValue = 0;
+  const totalMonthlySalaries = employees.reduce((acc, emp) => {
+    const val = typeof emp.salario === 'number' ? emp.salario : parseFloat(emp.salary || 0);
+    return acc + val;
+  }, 0);
+
+  let totalSalariesValue = 0;
+  if (timeFilter === 'month') {
+    totalSalariesValue = totalMonthlySalaries; 
+  } else if (timeFilter === 'year') {
+    totalSalariesValue = totalMonthlySalaries * 12; 
+  } else if (timeFilter === 'today') {
+    totalSalariesValue = totalMonthlySalaries / 30; 
+  }
 
   const grandTotalValue = totalExpensesValue + totalSalariesValue; 
 
@@ -143,7 +238,6 @@ const Costs = () => {
       <main className="main-content">
         <div className="content-wrapper">
 
-           
             <div className="page-header-row">
               <div className="title-area">
                 <div className="title-icon-box">
@@ -155,28 +249,12 @@ const Costs = () => {
                 </div>
               </div>
               <div className="filter-group">
-                <button 
-                  className={`filter-btn ${timeFilter === 'today' ? 'active' : ''}`} 
-                  onClick={() => setTimeFilter('today')}
-                >
-                  Hoje
-                </button>
-                <button 
-                  className={`filter-btn ${timeFilter === 'month' ? 'active' : ''}`} 
-                  onClick={() => setTimeFilter('month')}
-                >
-                  Este Mês
-                </button>
-                <button 
-                  className={`filter-btn ${timeFilter === 'year' ? 'active' : ''}`} 
-                  onClick={() => setTimeFilter('year')}
-                >
-                  Este Ano
-                </button>
+                <button className={`filter-btn ${timeFilter === 'today' ? 'active' : ''}`} onClick={() => setTimeFilter('today')}>Hoje</button>
+                <button className={`filter-btn ${timeFilter === 'month' ? 'active' : ''}`} onClick={() => setTimeFilter('month')}>Este Mês</button>
+                <button className={`filter-btn ${timeFilter === 'year' ? 'active' : ''}`} onClick={() => setTimeFilter('year')}>Este Ano</button>
               </div>
             </div>
 
-         
             <div className="summary-cards-grid">
               <div className="cost-card">
                 <p className="card-label">Despesas Gerais</p>
@@ -192,7 +270,6 @@ const Costs = () => {
               </div>
             </div>
 
-        
             <div className="tabs-container">
               <button className={`tab-btn ${activeTab === 'expenses' ? 'active' : ''}`} onClick={() => setActiveTab('expenses')}>
                 <Receipt size={18} /> Despesas Gerais
@@ -202,33 +279,38 @@ const Costs = () => {
               </button>
             </div>
 
-      
-            {activeTab === 'expenses' ? (
+            {activeTab === 'expenses' && (
               <>
                 <button className="add-expense-btn" onClick={() => handleOpenModal('expense')}>
-                  <Plus size={20} />
-                  Adicionar Despesa
+                  <Plus size={20} /> Adicionar Despesa
                 </button>
 
-                {/* Lista de Despesas */}
-                {expenses.length > 0 ? (
+                {filteredExpenses.length > 0 ? (
                   <div className="expenses-list">
-                    {expenses.map((expense) => (
-                      <div key={expense.id} className="expense-item">
+                    {filteredExpenses.map((expense, index) => (
+                      <div key={expense.idDespesa || index} className="expense-item">
                         <div className="expense-info">
-                          <h4 className="expense-name">{expense.name}</h4>
-                          <div className="expense-meta">
-                            <span className="expense-date">{expense.date}</span>
-                            <span className="expense-category">{expense.category}</span>
+                          <h4 className="expense-name" style={{ marginBottom: '8px' }}>
+                            {expense.descricao || "Sem nome"}
+                          </h4>
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                              <Calendar size={16} color="#4f46e5" />
+                              <span style={{ fontSize: '0.9rem', color: '#666' }}>
+                                Data de vencimento: <strong style={{color: '#333'}}>{formatDateToBR(expense.dataDespesa)}</strong>
+                              </span>
                           </div>
+
+                          <span className="expense-category" style={{ fontSize: '0.8rem', color: '#888' }}>
+                              Categoria: Geral
+                          </span>
                         </div>
+
                         <div className="expense-actions">
-                          <span className="expense-value">R$ {expense.value}</span>
-                          <button 
-                            className="delete-expense-btn"
-                            onClick={() => handleDeleteExpense(expense.id)}
-                            aria-label="Deletar despesa"
-                          >
+                          <span className="expense-value">
+                              {formatCurrency(expense.valor)}
+                          </span>
+                          <button className="delete-expense-btn" onClick={() => handleDeleteExpense(expense.idDespesa)}>
                             <Trash2 size={18} />
                           </button>
                         </div>
@@ -237,189 +319,136 @@ const Costs = () => {
                   </div>
                 ) : (
                   <div className="empty-state-container">
-                    <div className="empty-icon-box">
-                      <DollarSign size={48} color="#999" />
-                    </div>
+                    <div className="empty-icon-box"><DollarSign size={48} color="#999" /></div>
                     <p>Nenhuma despesa registrada neste período</p>
                   </div>
                 )}
               </>
-            ) : (
+            )}
+
+            {activeTab === 'employees' && (
               <>
                 <button className="add-employee-btn" onClick={() => handleOpenModal('employee')}>
-                  <Plus size={20} />
-                  Adicionar Funcionário
+                  <Plus size={20} /> Adicionar Funcionário
                 </button>
 
-                <div className="empty-state-container">
-                  <div className="empty-icon-box">
-                    <Users size={48} color="#999" />
+                {employees.length > 0 ? (
+                  <div className="expenses-list">
+                    {employees.map((employee, index) => (
+                   
+                      <div key={employee.idFuncionario || index} className="expense-item"> 
+                        <div className="expense-info">
+                          <h4 className="expense-name">
+                              {employee.nome || employee.Nome || "Sem Nome"}
+                          </h4>
+                          <div className="expense-meta">
+                            <span style={{color: '#666', fontSize: '0.85rem'}}>Admissão: </span>
+                            <span style={{fontWeight: 'bold', color: '#333'}}>
+                                {formatDateToBR(employee.dataAdmissao || employee.DataAdmissao || employee.admissionDate)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="expense-actions">
+                          <span className="employee-salary-text">
+                            {formatCurrency(employee.salario || employee.Salario)}/mês
+                          </span>
+                          
+                     
+                          <button className="delete-expense-btn" onClick={() => handleDeleteEmployee(employee.idFuncionario)}>
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <p>Nenhum funcionário cadastrado</p>
-                </div>
+                ) : (
+                  <div className="empty-state-container">
+                    <div className="empty-icon-box"><Users size={48} color="#999" /></div>
+                    <p>Nenhum funcionário cadastrado</p>
+                  </div>
+                )}
               </>
             )}
 
         </div> 
       </main>
 
-      {/* Modal Nova Despesa */}
+
       {isModalOpen && modalType === 'expense' && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-section">
-                <div className="modal-icon-box">
-                  <DollarSign size={24} color="#000" />
-                </div>
+                <div className="modal-icon-box"><DollarSign size={24} color="#000" /></div>
                 <h3>Adicionar Despesa</h3>
               </div>
-              <button className="modal-close-btn" onClick={handleCloseModal}>
-                <X size={20} />
-              </button>
+              <button className="modal-close-btn" onClick={handleCloseModal}><X size={20} /></button>
             </div>
-
             <div className="modal-body">
               <div className="form-group">
-                <label htmlFor="description">
-                  Descrição<span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="description"
-                  name="description"
-                  placeholder="Ex: conta de Luz, produtos"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                />
+                <label>Descrição<span className="required">*</span></label>
+                <input type="text" name="description" placeholder="Ex: conta de Luz" value={formData.description} onChange={handleInputChange} />
               </div>
-
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="value">
-                    Valor(R$)
-                  </label>
-                  <input
-                    type="text"
-                    id="value"
-                    name="value"
-                    placeholder="R$ 0,00"
-                    value={formData.value}
-                    onChange={handleInputChange}
+                  <label>Valor(R$)</label>
+                  <input type="text" name="value" placeholder="R$ 0,00" value={formData.value} onChange={(e) => {
+                      const formatted = formatValue(e.target.value); 
+                      setFormData({...formData, value: e.target.value}); 
+                  }} 
+                  onBlur={(e) => setFormData({...formData, value: formatValue(e.target.value)})}
                   />
                 </div>
-
                 <div className="form-group">
-                  <label htmlFor="date">
-                    Data<span className="required">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    id="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleInputChange}
-                  />
+                  <label>Data de Vencimento<span className="required">*</span></label>
+                  <input type="date" name="date" value={formData.date} onChange={handleInputChange} />
                 </div>
               </div>
             </div>
-
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={handleCloseModal}>
-                Cancelar
-              </button>
-              <button className="btn-save-expense" onClick={handleSave}>
-                <Save size={16} />
-                Salvar Despesa
-              </button>
+              <button className="btn-cancel" onClick={handleCloseModal}>Cancelar</button>
+              <button className="btn-save-expense" onClick={handleSave}><Save size={16} /> Salvar Despesa</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Adicionar Funcionário */}
       {isModalOpen && modalType === 'employee' && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-section">
-                <div className="modal-icon-box">
-                  <Users size={24} color="#000" />
-                </div>
+                <div className="modal-icon-box"><Users size={24} color="#000" /></div>
                 <h3>Adicionar funcionário</h3>
               </div>
-              <button className="modal-close-btn" onClick={handleCloseModal}>
-                <X size={20} />
-              </button>
+              <button className="modal-close-btn" onClick={handleCloseModal}><X size={20} /></button>
             </div>
-
             <div className="modal-body">
               <div className="form-group">
-                <label htmlFor="employee-name">
-                  Nome do funcionário<span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="employee-name"
-                  name="name"
-                  placeholder="Digite o nome Completo"
-                  value={employeeFormData.name}
-                  onChange={handleEmployeeInputChange}
-                />
+                <label>Nome do funcionário<span className="required">*</span></label>
+                <input type="text" name="name" placeholder="Digite o nome Completo" value={employeeFormData.name} onChange={handleEmployeeInputChange} />
               </div>
-
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="employee-salary">
-                    Salário mensal (R$)<span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="employee-salary"
-                    name="salary"
-                    placeholder="R$ 0,00"
-                    value={employeeFormData.salary}
-                    onChange={handleEmployeeInputChange}
+                  <label>Salário mensal (R$)<span className="required">*</span></label>
+                  <input type="text" name="salary" placeholder="R$ 0,00" value={employeeFormData.salary} 
+                   onChange={(e) => setEmployeeFormData({...employeeFormData, salary: e.target.value})} 
+                   onBlur={(e) => setEmployeeFormData({...employeeFormData, salary: formatValue(e.target.value)})}
                   />
                 </div>
-
                 <div className="form-group">
-                  <label htmlFor="employee-phone">
-                    Telefone
-                  </label>
-                  <input
-                    type="text"
-                    id="employee-phone"
-                    name="phone"
-                    placeholder="(00) 00000-0000"
-                    value={employeeFormData.phone}
-                    onChange={handleEmployeeInputChange}
-                  />
+                  <label>Telefone</label>
+                  <input type="text" name="phone" placeholder="(00) 00000-0000" value={employeeFormData.phone} onChange={handleEmployeeInputChange} />
                 </div>
               </div>
-
               <div className="form-group">
-                <label htmlFor="employee-admission">
-                  Data de admissão
-                </label>
-                <input
-                  type="date"
-                  id="employee-admission"
-                  name="admissionDate"
-                  value={employeeFormData.admissionDate}
-                  onChange={handleEmployeeInputChange}
-                />
+                <label>Data de admissão</label>
+                <input type="date" name="admissionDate" value={employeeFormData.admissionDate} onChange={handleEmployeeInputChange} />
               </div>
             </div>
-
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={handleCloseModal}>
-                Cancelar
-              </button>
-              <button className="btn-save-employee" onClick={handleSaveEmployee}>
-                <Save size={16} />
-                Salvar funcionário
-              </button>
+              <button className="btn-cancel" onClick={handleCloseModal}>Cancelar</button>
+              <button className="btn-save-employee" onClick={handleSaveEmployee}><Save size={16} /> Salvar funcionário</button>
             </div>
           </div>
         </div>

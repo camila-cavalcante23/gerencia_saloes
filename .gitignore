@@ -27,6 +27,7 @@ dist-ssr
 .env
 .env.test
 .env.production
+.env.local  <-- Adicione esta linha aqui
 
 # Arquivos de sistema (Windows)
 Thumbs.db

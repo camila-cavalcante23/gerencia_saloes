@@ -30,10 +30,13 @@ const SignUp = () => {
 
     setLoading(true);
 
-    try {
+  try {
+      const nomeAutomatico = email.split('@')[0];
       const response = await api.post('/Usuario/cadastro-admin', {
-        Email: email,
-        Senha: password
+        nome: nomeAutomatico, //adicionei esse aqui vitoria 
+
+        email: email,
+        senha: password
       });
 
       alert("Cadastro realizado com sucesso!");

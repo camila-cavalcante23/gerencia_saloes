@@ -204,8 +204,14 @@ function Dashboard() {
       
         <div className="services-section">
           <h3 className="services-title">Atendimento de Hoje</h3>
-          {services.length === 0 ? (
-             <p style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>Nenhum serviço registrado hoje.</p>
+       {services.length === 0 ? (
+            <div className="empty-state-card">
+              <div className="empty-state-icon-wrapper">
+                <Calendar size={32} color="#4a9eff" />
+              </div>
+              <h3 className="empty-state-title">Nenhum atendimento hoje</h3>
+              <p className="empty-state-subtitle">Adicione o primeiro atendimento do dia</p>
+            </div>
           ) : (
             <div className="services-list">
               {services.map((service) => (
