@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { 
   Calendar, 
@@ -11,6 +11,44 @@ import {
 import './navbar.css'; 
 
 const Navbar = () => {
+  const [isAdmin, setIsAdmin] = useState(true); 
+
+  useEffect(() => {
+    const getUsuarioPerfil = () => {
+      try {
+        const usuarioStr = localStorage.getItem('usuario');
+        if (usuarioStr) {
+          const usuario = JSON.parse(usuarioStr);
+          const perfil = usuario.perfil;
+          const adminStatus = perfil === 'Admin';
+          setIsAdmin(adminStatus);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Erro ao ler perfil do usuário:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    getUsuarioPerfil();
+    const handleStorageChange = () => {
+      getUsuarioPerfil();
+    };
+    
+    const handleLogin = () => {
+      getUsuarioPerfil();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userLogin', handleLogin);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userLogin', handleLogin);
+    };
+  }, []);
+
   return (
     <header className="header-nav">
     
@@ -43,15 +81,19 @@ const Navbar = () => {
           <span>Serviços</span>
         </NavLink>
 
-        <NavLink to="/custos" className="nav-item">
-          <DollarSign size={20} />
-          <span>Custos</span>
-        </NavLink>
+        {isAdmin && (
+          <>
+            <NavLink to="/custos" className="nav-item">
+              <DollarSign size={20} />
+              <span>Custos</span>
+            </NavLink>
 
-        <NavLink to="/lucro" className="nav-item">
-          <TrendingUp size={20} />
-          <span>Lucro</span>
-        </NavLink>
+            <NavLink to="/lucro" className="nav-item">
+              <TrendingUp size={20} />
+              <span>Lucro</span>
+            </NavLink>
+          </>
+        )}
 
         <NavLink to="/perfil" className="nav-item">
           <User size={20} />
