@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   User,
   Lock,
@@ -10,6 +11,35 @@ import Navbar from "../../components/Navbar";
 
 function Profile() {
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const getUsuarioPerfil = () => {
+      try {
+        const usuarioStr = localStorage.getItem('usuario');
+        if (usuarioStr) {
+          const usuario = JSON.parse(usuarioStr);
+          const perfil = usuario.perfil;
+          setIsAdmin(perfil === 'Admin');
+        }
+      } catch (error) {
+        console.error('Erro ao ler perfil do usuário:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    getUsuarioPerfil();
+    
+    const handleLogin = () => {
+      getUsuarioPerfil();
+    };
+    
+    window.addEventListener('userLogin', handleLogin);
+    
+    return () => {
+      window.removeEventListener('userLogin', handleLogin);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -40,9 +70,11 @@ function Profile() {
                   </div>
                 </div>
             
-                <a href="/perfil-funcionario" className="add-employee-button">
-                  + Adicionar
-                </a>
+                {isAdmin && (
+                  <a href="/perfil-funcionario" className="add-employee-button">
+                    + Adicionar
+                  </a>
+                )}
               </div>
             </div>
 

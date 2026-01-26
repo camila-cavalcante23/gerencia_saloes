@@ -26,8 +26,10 @@ const Login = () => {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
       }
-      if (response.data.usuario) {
-        localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+      if (response.data) {
+        const { token, ...usuarioData } = response.data;
+        localStorage.setItem('usuario', JSON.stringify(usuarioData));
+        window.dispatchEvent(new Event('userLogin'));
       }
       navigate('/dashboard');
     } catch (err) {
