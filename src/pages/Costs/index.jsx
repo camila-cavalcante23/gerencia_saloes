@@ -102,13 +102,13 @@ const Costs = () => {
   const formatDateToBR = (dateString) => {
     if (!dateString) return '';
     if (dateString.startsWith('0001')) return 'Data Pendente';
-    
     const datePart = dateString.toString().split('T')[0]; 
     const [year, month, day] = datePart.split('-');
     return `${day}/${month}/${year}`;
   };
 
-  const handleSave = async () => {
+  // --- FUNÇÕES DE SALVAR ---
+  const handleSaveExpense = async () => {
     if (formData.description && formData.value) {
       try {
         const payload = {
@@ -117,7 +117,6 @@ const Costs = () => {
           dataDespesa: formData.date,
           categoria: "Geral" 
         };
-
         await api.post('/Despesa', payload);
         await loadData(); 
         handleCloseModal();
@@ -138,7 +137,6 @@ const Costs = () => {
           telefone: employeeFormData.phone,
           dataAdmissao: employeeFormData.admissionDate
         };
-
         await api.post('/Funcionario', payload);
         await loadData(); 
         handleCloseModal();
@@ -150,46 +148,81 @@ const Costs = () => {
     }
   };
 
+
+  const getExpenseId = (exp) => exp.id || exp.idDespesa || exp.IdDespesa || exp.Id;
+  const getEmployeeId = (emp) => emp.id || emp.idFuncionario || emp.IdFuncionario || emp.Id;
+
   const handleDeleteExpense = async (id) => {
     if(window.confirm("Excluir despesa?")) {
       try {
         await api.delete(`/Despesa/${id}`);
-        setExpenses(expenses.filter(expense => expense.idDespesa !== id));
+        setExpenses(prev => prev.filter(e => getExpenseId(e) !== id));
       } catch (error) {
-        alert("Erro ao excluir");
+        alert("Erro ao excluir. Verifique a conexão.");
       }
     }
   };
 
-  const handleDeleteEmployee = async (id) => {
-    if(window.confirm("Excluir funcionário?")) {
+ const handleDeleteEmployee = async (id) => {
+
+    const employeeToDelete = employees.find(e => getEmployeeId(e) === id);
+    const empName = employeeToDelete ? (employeeToDelete.nome || employeeToDelete.Nome) : "o funcionário";
+
+    if(window.confirm(`ATENÇÃO: Excluir ${empName} irá apagar também todo o histórico de salários lançados nas despesas.\n\nDeseja continuar?`)) {
       try {
-       
+        
+
+        const despesasVinculadas = expenses.filter(exp => 
+            exp.idFuncionario === id || exp.IdFuncionario === id
+        );
+
+      
+        if (despesasVinculadas.length > 0) {
+         
+            await Promise.all(despesasVinculadas.map(exp => 
+                api.delete(`/Despesa/${getExpenseId(exp)}`)
+            ));
+            
+          
+            const idsDespesasApagadas = despesasVinculadas.map(e => getExpenseId(e));
+            setExpenses(prev => prev.filter(e => !idsDespesasApagadas.includes(getExpenseId(e))));
+        }
+
+ 
         await api.delete(`/Funcionario/${id}`);
-    
-        setEmployees(employees.filter(emp => emp.idFuncionario !== id));
+        
+ 
+        setEmployees(prev => prev.filter(e => getEmployeeId(e) !== id));
+        
+        alert("Funcionário e históricos excluídos com sucesso!");
+
       } catch (error) {
-        console.error(error);
-        alert("Erro ao excluir");
+        console.error("Erro na exclusão inteligente:", error);
+        
+
+        if (error.response && error.response.status === 500) {
+             alert(`Erro ao excluir.\n\nO sistema tentou limpar os salários automaticamente, mas o Banco de Dados ainda encontrou registros presos (talvez em Agendamentos antigos).\n\nErro técnico: ${error.response.data}`);
+        } else {
+             alert("Erro ao excluir funcionário. Verifique sua conexão.");
+        }
       }
     }
   };
 
   const formatCurrency = (value) => {
     let num = value;
-    if (typeof value === 'string') {
-        num = parseFloat(value);
-    }
+    if (typeof value === 'string') num = parseFloat(value);
     if (isNaN(num)) return 'R$ 0,00';
     return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
+
+
 
   const checkFilter = (dataString) => {
     if (!dataString) return true;
     if (dataString.startsWith('0001')) return true;
 
     const dataItem = dataString.toString().split('T')[0]; 
-    
     const hojeObj = new Date();
     const anoAtual = hojeObj.getFullYear();
     const mesAtual = String(hojeObj.getMonth() + 1).padStart(2, '0');
@@ -207,18 +240,26 @@ const Costs = () => {
 
   const filteredExpenses = expenses.filter(expense => {
       const data = expense.dataDespesa || expense.DataDespesa;
-      return checkFilter(data);
+   
+      const temFuncionarioVinculado = expense.idFuncionario !== null && expense.idFuncionario !== undefined || 
+                                      expense.IdFuncionario !== null && expense.IdFuncionario !== undefined;
+
+
+      return checkFilter(data) && !temFuncionarioVinculado;
   });
+
 
   const totalExpensesValue = filteredExpenses.reduce((acc, expense) => {
     const val = typeof expense.valor === 'number' ? expense.valor : parseFloat(expense.value || 0);
     return acc + val;
   }, 0);
 
+
   const totalMonthlySalaries = employees.reduce((acc, emp) => {
     const val = typeof emp.salario === 'number' ? emp.salario : parseFloat(emp.salary || 0);
     return acc + val;
   }, 0);
+
 
   let totalSalariesValue = 0;
   if (timeFilter === 'month') {
@@ -228,6 +269,7 @@ const Costs = () => {
   } else if (timeFilter === 'today') {
     totalSalariesValue = totalMonthlySalaries / 30; 
   }
+
 
   const grandTotalValue = totalExpensesValue + totalSalariesValue; 
 
@@ -279,6 +321,7 @@ const Costs = () => {
               </button>
             </div>
 
+
             {activeTab === 'expenses' && (
               <>
                 <button className="add-expense-btn" onClick={() => handleOpenModal('expense')}>
@@ -288,29 +331,26 @@ const Costs = () => {
                 {filteredExpenses.length > 0 ? (
                   <div className="expenses-list">
                     {filteredExpenses.map((expense, index) => (
-                      <div key={expense.idDespesa || index} className="expense-item">
+                      <div key={getExpenseId(expense) || index} className="expense-item">
                         <div className="expense-info">
                           <h4 className="expense-name" style={{ marginBottom: '8px' }}>
                             {expense.descricao || "Sem nome"}
                           </h4>
-                          
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                               <Calendar size={16} color="#4f46e5" />
                               <span style={{ fontSize: '0.9rem', color: '#666' }}>
-                                Data de vencimento: <strong style={{color: '#333'}}>{formatDateToBR(expense.dataDespesa)}</strong>
+                                Vencimento: <strong style={{color: '#333'}}>{formatDateToBR(expense.dataDespesa)}</strong>
                               </span>
                           </div>
-
                           <span className="expense-category" style={{ fontSize: '0.8rem', color: '#888' }}>
                               Categoria: Geral
                           </span>
                         </div>
-
                         <div className="expense-actions">
                           <span className="expense-value">
                               {formatCurrency(expense.valor)}
                           </span>
-                          <button className="delete-expense-btn" onClick={() => handleDeleteExpense(expense.idDespesa)}>
+                          <button className="delete-expense-btn" onClick={() => handleDeleteExpense(getExpenseId(expense))}>
                             <Trash2 size={18} />
                           </button>
                         </div>
@@ -326,6 +366,7 @@ const Costs = () => {
               </>
             )}
 
+    
             {activeTab === 'employees' && (
               <>
                 <button className="add-employee-btn" onClick={() => handleOpenModal('employee')}>
@@ -334,32 +375,32 @@ const Costs = () => {
 
                 {employees.length > 0 ? (
                   <div className="expenses-list">
-                    {employees.map((employee, index) => (
-                   
-                      <div key={employee.idFuncionario || index} className="expense-item"> 
-                        <div className="expense-info">
-                          <h4 className="expense-name">
-                              {employee.nome || employee.Nome || "Sem Nome"}
-                          </h4>
-                          <div className="expense-meta">
-                            <span style={{color: '#666', fontSize: '0.85rem'}}>Admissão: </span>
-                            <span style={{fontWeight: 'bold', color: '#333'}}>
-                                {formatDateToBR(employee.dataAdmissao || employee.DataAdmissao || employee.admissionDate)}
+                    {employees.map((employee, index) => {
+                      const empId = getEmployeeId(employee);
+                      return (
+                        <div key={empId || index} className="expense-item"> 
+                          <div className="expense-info">
+                            <h4 className="expense-name">
+                                {employee.nome || employee.Nome || "Sem Nome"}
+                            </h4>
+                            <div className="expense-meta">
+                              <span style={{color: '#666', fontSize: '0.85rem'}}>Admissão: </span>
+                              <span style={{fontWeight: 'bold', color: '#333'}}>
+                                  {formatDateToBR(employee.dataAdmissao || employee.DataAdmissao || employee.admissionDate)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="expense-actions">
+                            <span className="employee-salary-text">
+                              {formatCurrency(employee.salario || employee.Salario)}/mês
                             </span>
+                            <button className="delete-expense-btn" onClick={() => handleDeleteEmployee(empId)}>
+                              <Trash2 size={18} />
+                            </button>
                           </div>
                         </div>
-                        <div className="expense-actions">
-                          <span className="employee-salary-text">
-                            {formatCurrency(employee.salario || employee.Salario)}/mês
-                          </span>
-                          
-                     
-                          <button className="delete-expense-btn" onClick={() => handleDeleteEmployee(employee.idFuncionario)}>
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="empty-state-container">
@@ -373,7 +414,7 @@ const Costs = () => {
         </div> 
       </main>
 
-
+ 
       {isModalOpen && modalType === 'expense' && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -407,11 +448,12 @@ const Costs = () => {
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={handleCloseModal}>Cancelar</button>
-              <button className="btn-save-expense" onClick={handleSave}><Save size={16} /> Salvar Despesa</button>
+              <button className="btn-save-expense" onClick={handleSaveExpense}><Save size={16} /> Salvar Despesa</button>
             </div>
           </div>
         </div>
       )}
+
 
       {isModalOpen && modalType === 'employee' && (
         <div className="modal-overlay" onClick={handleCloseModal}>

@@ -138,7 +138,7 @@ function Services() {
           </div>
 
           {services.length === 0 ? (
-            <div className="empty-state-card"><h3>Nenhum serviço</h3></div>
+            <div className="empty-state-card"><h3>Nenhum serviço cadastrado</h3></div>
           ) : (
             <div className="services-list">
               {services.map(service => (
