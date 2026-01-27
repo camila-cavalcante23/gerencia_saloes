@@ -313,7 +313,7 @@ function Dashboard() {
           <div className="summary-card">
             <div className="summary-icon"><Calendar size={24} /></div>
             <div className="summary-content">
-              <p className="summary-label">PENDENTES</p>
+              <p className="summary-label">AGENDADOS PENDENTES</p>
               <p className="summary-value">{scheduledCount}</p>
             </div>
           </div>

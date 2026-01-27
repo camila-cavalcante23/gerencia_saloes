@@ -74,7 +74,7 @@ const FinishDayModal = ({ isOpen, onClose, summary, onConfirm }) => {
             <p className="revenue-amount">{summary?.revenue || "R$ 0,00"}</p>
           </div>
 
-          {/* --- NOVO AVISO DE AUTO-CONCLUSÃO --- */}
+         
           {summary?.pending > 0 && (
               <div className="warning-box">
                 <div style={{ flexShrink: 0 }}>
