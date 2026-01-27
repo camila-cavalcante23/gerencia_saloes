@@ -1,122 +1,218 @@
 
-import React, { useState } from 'react';
-import { Lock, Scissors, LogOut } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Lock, ArrowLeft, User, Eye, EyeOff } from 'lucide-react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import api from '../../services/axios';
 import '../Login/Login.css';
 
 const ChangePassword = () => {
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [token, setToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('token');
+    if (tokenFromUrl) {
+      setToken(tokenFromUrl);
+    } else {
+      setError('Token de redefinição não encontrado. Por favor, use o link enviado por e-mail.');
+    }
+  }, [searchParams]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if(newPassword !== confirmPassword) {
-      alert("As novas senhas não coincidem!");
+    setError('');
+    setSuccess('');
+
+    if (!newPassword || !confirmPassword) {
+      setError('Por favor, preencha todos os campos.');
       return;
     }
-    console.log("Alterando senha...");
+
+    if (newPassword !== confirmPassword) {
+      setError('As senhas não coincidem!');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    if (!token) {
+      setError('Token de redefinição não encontrado. Por favor, use o link enviado por e-mail.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await api.post('/Usuario/redefinir-senha', {
+        token: token,
+        novaSenha: newPassword,
+        confirmarNovaSenha: confirmPassword
+      });
+
+      setSuccess('Senha redefinida com sucesso! Redirecionando para o login...');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 
+        err.response?.data?.erro || 
+        'Erro ao redefinir senha. Verifique se o token é válido e tente novamente.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-container">
-      <div className="login-card" style={{ maxWidth: '450px' }}> 
-        
-  
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem' }}>
-            <div style={{ background: '#e0e7ff', padding: '6px', borderRadius: '8px' }}>
-                <Scissors size={20} color="#4f46e5" />
-            </div>
-            <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Meu Salão</span>
+      <div className="login-card">
+       
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ background: '#4f46e5', padding: '20px', borderRadius: '50px', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Lock size={40} color="#e0e7ff" strokeWidth={1.5} />
+          </div>
         </div>
 
-        <div style={{ textAlign: 'left', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-           <Lock size={20} />
-           <h3 style={{ margin: 0 }}>Alterar Senha</h3>
+        <div className="login-header">
+          <h2 style={{ fontSize: '1.5rem' }}>Redefinição de senha</h2>
+          <p style={{ maxWidth: '300px', margin: '0 auto', lineHeight: '1.4', marginBottom: '2rem' }}>
+            Digite sua nova senha nos campos abaixo
+          </p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          
-       
-          <div className="input-group">
-            <label htmlFor="current" style={{fontWeight: 'bold'}}>Senha Atual</label>
-            <input 
-              type="password" 
-              id="current"
-              className="login-input"
-              style={{ paddingLeft: '12px' }}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-            />
+          {error && (
+            <div style={{ 
+              color: '#ef4444', 
+              fontSize: '0.875rem', 
+              marginBottom: '1rem',
+              textAlign: 'center',
+              padding: '0.5rem',
+              backgroundColor: '#fee2e2',
+              borderRadius: '4px'
+            }}>
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div style={{ 
+              color: '#10b981', 
+              fontSize: '0.875rem', 
+              marginBottom: '1rem',
+              textAlign: 'center',
+              padding: '0.5rem',
+              backgroundColor: '#d1fae5',
+              borderRadius: '4px'
+            }}>
+              {success}
+            </div>
+          )}
+
+          <div className="input-group" style={{ marginTop: '1rem' }}>
+            <label htmlFor="newPassword" style={{fontWeight: 'bold'}}>Nova Senha</label>
+            <div className="input-wrapper">
+              <input 
+                type={showNewPassword ? "text" : "password"}
+                id="newPassword"
+                placeholder="Digite sua nova senha" 
+                className="login-input"
+                style={{ paddingLeft: '12px' }} 
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  if (error) setError('');
+                  if (success) setSuccess('');
+                }}
+                required
+                disabled={loading}
+                minLength={6}
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
-    
           <div className="input-group">
-            <label htmlFor="new" style={{fontWeight: 'bold'}}>Nova Senha</label>
-            <input 
-              type="password" 
-              id="new"
-              className="login-input"
-              style={{ paddingLeft: '12px' }}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
+            <label htmlFor="confirmPassword" style={{fontWeight: 'bold'}}>Confirmação de Senha</label>
+            <div className="input-wrapper">
+              <input 
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                placeholder="Confirme sua nova senha" 
+                className="login-input"
+                style={{ paddingLeft: '12px' }} 
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (error) setError('');
+                  if (success) setSuccess('');
+                }}
+                required
+                disabled={loading}
+                minLength={6}
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
-      
-          <div className="input-group">
-            <label htmlFor="confirm" style={{fontWeight: 'bold'}}>Confirme Nova Senha</label>
-            <input 
-              type="password" 
-              id="confirm"
-              className="login-input"
-              style={{ paddingLeft: '12px' }}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </div>
-
-     
           <button 
             type="submit" 
             className="login-button" 
-            style={{ 
-                background: '#F3F4F6', 
-                color: '#1F2937', 
-                border: '1px solid #E5E7EB',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                marginTop: '10px'
-            }}
+            style={{ background: '#3B82F6' }}
+            disabled={loading}
           >
-            <Lock size={16} />
-            Alterar Senha
+            {loading ? 'Redefinindo...' : 'Redefinir Senha'}
           </button>
-
         </form>
 
-  
-        <div style={{ marginTop: '3rem' }}>
-            <Link to="/" style={{ textDecoration: 'none' }}>
-                <button 
-                    type="button"
-                    className="login-button"
-                    style={{ 
-                        background: '#EEF2FF', 
-                        color: '#1F2937', 
-                        border: '1px solid #C7D2FE',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
-                    }}
-                >
-                    <LogOut size={16} style={{ transform: 'rotate(180deg)' }} /> 
-                    Entrar na conta
-                </button>
-            </Link>
+        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <Link to="/" style={{ color: '#666', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+            <ArrowLeft size={16} /> Voltar para Login
+          </Link>
         </div>
 
       </div>
