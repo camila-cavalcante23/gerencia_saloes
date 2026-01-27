@@ -29,6 +29,7 @@ const Costs = () => {
   
   const [expenses, setExpenses] = useState([]);
   const [employees, setEmployees] = useState([]); 
+  const [usuariosFuncionarios, setUsuariosFuncionarios] = useState([]);
 
   const [formData, setFormData] = useState({
     description: '',
@@ -50,6 +51,17 @@ const Costs = () => {
 
       const funcionariosResponse = await api.get('/Funcionario'); 
       setEmployees(funcionariosResponse.data);
+
+      try {
+        const usuariosResponse = await api.get('/Usuario');
+        const funcionariosList = usuariosResponse.data.filter(
+          usuario => usuario.perfil === 'Funcionario' || usuario.Perfil === 'Funcionario'
+        );
+        setUsuariosFuncionarios(funcionariosList);
+      } catch (error) {
+        console.error("Erro ao buscar usuários funcionários:", error);
+        setUsuariosFuncionarios([]);
+      }
     } catch (error) {
       console.error("Erro ao buscar dados", error);
     }
@@ -66,9 +78,23 @@ const Costs = () => {
     return parseFloat(cleanStr) / 100;
   };
 
-  const handleOpenModal = (type) => {
+  const handleOpenModal = async (type) => {
     setModalType(type);
     setIsModalOpen(true);
+    
+    if (type === 'employee') {
+      try {
+        const usuariosResponse = await api.get('/Usuario');
+        const funcionariosList = usuariosResponse.data.filter(
+          usuario => usuario.perfil === 'Funcionario' || usuario.Perfil === 'Funcionario'
+        );
+        console.log('Funcionários encontrados:', funcionariosList);
+        setUsuariosFuncionarios(funcionariosList);
+      } catch (error) {
+        console.error("Erro ao buscar usuários funcionários:", error);
+        setUsuariosFuncionarios([]);
+      }
+    }
   };
 
   const handleCloseModal = () => {
@@ -468,7 +494,35 @@ const Costs = () => {
             <div className="modal-body">
               <div className="form-group">
                 <label>Nome do funcionário<span className="required">*</span></label>
-                <input type="text" name="name" placeholder="Digite o nome Completo" value={employeeFormData.name} onChange={handleEmployeeInputChange} />
+                <select 
+                  name="name" 
+                  value={employeeFormData.name} 
+                  onChange={handleEmployeeInputChange}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    backgroundColor: '#fff',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">Selecione um funcionário</option>
+                  {usuariosFuncionarios.length === 0 ? (
+                    <option value="" disabled>Nenhum funcionário encontrado</option>
+                  ) : (
+                    usuariosFuncionarios.map((funcionario) => {
+                      const nome = funcionario.usuario || funcionario.Usuario || funcionario.nome || funcionario.Nome || 'Sem nome';
+                      const id = funcionario.id || funcionario.Id || funcionario.idUsuario || funcionario.IdUsuario;
+                      return (
+                        <option key={id} value={nome}>
+                          {nome}
+                        </option>
+                      );
+                    })
+                  )}
+                </select>
               </div>
               <div className="form-row">
                 <div className="form-group">
@@ -484,8 +538,8 @@ const Costs = () => {
                 </div>
               </div>
               <div className="form-group">
-                <label>Data de admissão</label>
-                <input type="date" name="admissionDate" value={employeeFormData.admissionDate} onChange={handleEmployeeInputChange} />
+                <label>Data de pagamento</label>
+              <input type="date" name="admissionDate" value={employeeFormData.admissionDate} onChange={handleEmployeeInputChange} />
               </div>
             </div>
             <div className="modal-footer">
