@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import "./calendarManagment.css";
-
-
+import api from "../../services/axios";
 import Navbar from "../../components/Navbar";
 
 function CalendarManagment() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 9, 1));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("month");
+  const [servicos, setServicos] = useState([]);
   
   const months = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -122,6 +122,78 @@ function CalendarManagment() {
     return days;
   };
 
+  const formatDateToString = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const loadServicos = async () => {
+    try {
+      let endpoint = '/Servicos/anual';
+      let params = {};
+      
+      if (viewMode === 'mes') {
+        endpoint = '/Servicos/mes';
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1;
+        params = { ano: year, mes: month };
+      } else if (viewMode === 'semana') {
+        endpoint = '/Servicos/semana';
+        const weekStart = getWeekDays(new Date(currentDate))[0];
+        const weekEnd = getWeekDays(new Date(currentDate))[6];
+        params = { 
+          dataInicio: formatDateToString(weekStart),
+          dataFim: formatDateToString(weekEnd)
+        };
+      } else if (viewMode === 'dia') {
+        endpoint = '/Servicos/dia';
+        params = { data: formatDateToString(currentDate) };
+      }
+
+      const response = await api.get(endpoint, { params });
+
+      const servicosNormalizados = response.data.map(servico => {
+        const dataRaw = servico.dataServico || servico.DataServico || servico.data;
+        const dataStr = dataRaw ? dataRaw.split('T')[0] : '';
+        
+        return {
+          id: servico.idServico || servico.IdServico,
+          data: dataStr,
+          cliente: servico.clienteNome || servico.ClienteNome,
+          horario: servico.horario || servico.Horario,
+          status: servico.statusServico || servico.StatusServico
+        };
+      });
+
+      setServicos(servicosNormalizados);
+    } catch (error) {
+      console.error('Erro ao carregar serviços:', error);
+      setServicos([]);
+    }
+  };
+
+  const getServicosCountByDate = (date) => {
+    const dateStr = formatDateToString(date);
+    return servicos.filter(servico => servico.data === dateStr).length;
+  };
+
+  const getServicosByDateAndHour = (date, hour) => {
+    const dateStr = formatDateToString(date);
+    return servicos.filter(servico => {
+      if (servico.data !== dateStr) return false;
+      if (servico.horario) {
+        const [h] = servico.horario.split(':');
+        return parseInt(h) === hour;
+      }
+      return false;
+    });
+  };
+
+  useEffect(() => {
+    loadServicos();
+  }, [viewMode, currentDate]);
+
   const currentMonth = months[currentDate.getMonth()];
   const currentYear = currentDate.getFullYear();
   const currentDay = currentDate.getDate();
@@ -209,7 +281,9 @@ function CalendarManagment() {
                         <div className="week-day-name">
                           {daysOfWeek[day.getDay()]}
                         </div>
-                        <div className="week-day-number">{day.getDate()}</div>
+                        <div className="week-day-number">
+                          {day.getDate()}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -219,17 +293,31 @@ function CalendarManagment() {
                         <div className="week-time-label">
                           {String(hour).padStart(2, "0")}:00
                         </div>
-                        {getWeekDays(new Date(currentDate)).map((day, dayIndex) => (
-                          <div
-                            key={dayIndex}
-                            className="week-time-cell"
-                            onClick={() => {
-                              setCurrentDate(day);
-                              setViewMode("day");
-                            }}
-                          >
-                          </div>
-                        ))}
+                        {getWeekDays(new Date(currentDate)).map((day, dayIndex) => {
+                          const servicosNoHorario = getServicosByDateAndHour(day, hour);
+                          
+                          return (
+                            <div
+                              key={dayIndex}
+                              className="week-time-cell"
+                              onClick={() => {
+                                setCurrentDate(day);
+                                setViewMode("day");
+                              }}
+                            >
+                              {servicosNoHorario.length > 0 && (
+                                <div className="servicos-indicators">
+                                  {Array.from({ length: Math.min(servicosNoHorario.length, 3) }, (_, i) => (
+                                    <span key={i} className="servico-dot"></span>
+                                  ))}
+                                  {servicosNoHorario.length > 3 && (
+                                    <span className="servico-count">+{servicosNoHorario.length - 3}</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     ))}
                   </div>
@@ -266,15 +354,41 @@ function CalendarManagment() {
                     </div>
                   ))}
 
-                  {days.map((day, index) => (
-                    <button
-                      key={index}
-                      className={`calendar-day ${day ? "" : "empty"}`}
-                      disabled={!day}
-                    >
-                      {day}
-                    </button>
-                  ))}
+                  {days.map((day, index) => {
+                    if (!day) {
+                      return (
+                        <button
+                          key={index}
+                          className="calendar-day empty"
+                          disabled
+                        />
+                      );
+                    }
+                    
+                    const dayDate = new Date(currentYear, currentDate.getMonth(), day);
+                    const servicosCount = getServicosCountByDate(dayDate);
+                    
+                    return (
+                      <button
+                        key={index}
+                        className={`calendar-day ${day === currentDate.getDate() && 
+                          currentDate.getMonth() === new Date().getMonth() && 
+                          currentYear === new Date().getFullYear() ? "today" : ""}`}
+                      >
+                        <span className="day-number">{day}</span>
+                        {servicosCount > 0 && (
+                          <div className="servicos-indicators">
+                            {Array.from({ length: Math.min(servicosCount, 3) }, (_, i) => (
+                              <span key={i} className="servico-dot"></span>
+                            ))}
+                            {servicosCount > 3 && (
+                              <span className="servico-count">+{servicosCount - 3}</span>
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -314,29 +428,49 @@ function CalendarManagment() {
                               {day}
                             </div>
                           ))}
-                          {monthDays.map((day, dayIndex) => (
-                            <button
-                              key={dayIndex}
-                              className={`year-calendar-day ${day ? "" : "empty"} ${
-                                day &&
-                                monthIndex === currentDate.getMonth() &&
-                                day === currentDate.getDate()
-                                  ? "today"
-                                  : ""
-                              }`}
-                              disabled={!day}
-                              onClick={() => {
-                                if (day) {
-                                  setCurrentDate(
-                                    new Date(currentYear, monthIndex, day)
-                                  );
+                          {monthDays.map((day, dayIndex) => {
+                            if (!day) {
+                              return (
+                                <button
+                                  key={dayIndex}
+                                  className="year-calendar-day empty"
+                                  disabled
+                                />
+                              );
+                            }
+                            
+                            const dayDate = new Date(currentYear, monthIndex, day);
+                            const servicosCount = getServicosCountByDate(dayDate);
+                            
+                            return (
+                              <button
+                                key={dayIndex}
+                                className={`year-calendar-day ${
+                                  day &&
+                                  monthIndex === currentDate.getMonth() &&
+                                  day === currentDate.getDate()
+                                    ? "today"
+                                    : ""
+                                }`}
+                                onClick={() => {
+                                  setCurrentDate(dayDate);
                                   setViewMode("day");
-                                }
-                              }}
-                            >
-                              {day}
-                            </button>
-                          ))}
+                                }}
+                              >
+                                <span className="day-number">{day}</span>
+                                {servicosCount > 0 && (
+                                  <div className="servicos-indicators">
+                                    {Array.from({ length: Math.min(servicosCount, 3) }, (_, i) => (
+                                      <span key={i} className="servico-dot"></span>
+                                    ))}
+                                    {servicosCount > 3 && (
+                                      <span className="servico-count">+{servicosCount - 3}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -369,15 +503,29 @@ function CalendarManagment() {
 
                 <div className="day-view-content">
                   <div className="day-time-slots">
-                    {Array.from({ length: 24 }, (_, hour) => (
-                      <div key={hour} className="time-slot">
-                        <div className="time-label">
-                          {String(hour).padStart(2, "0")}:00
+                    {Array.from({ length: 24 }, (_, hour) => {
+                      const servicosNoHorario = getServicosByDateAndHour(currentDate, hour);
+                      
+                      return (
+                        <div key={hour} className="time-slot">
+                          <div className="time-label">
+                            {String(hour).padStart(2, "0")}:00
+                          </div>
+                          <div className="time-content">
+                            {servicosNoHorario.length > 0 && (
+                              <div className="servicos-indicators">
+                                {Array.from({ length: Math.min(servicosNoHorario.length, 3) }, (_, i) => (
+                                  <span key={i} className="servico-dot"></span>
+                                ))}
+                                {servicosNoHorario.length > 3 && (
+                                  <span className="servico-count">+{servicosNoHorario.length - 3}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="time-content">
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

@@ -181,10 +181,27 @@
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding: 0.25rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   min-height: 0;
+  position: relative;
+}
+
+.calendar-day .day-number {
+  margin-bottom: 0.25rem;
+}
+
+.calendar-day.today {
+  background-color: #73c4a5;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.calendar-day.today .servico-dot {
+  background-color: #ffffff;
 }
 
 .calendar-day:hover:not(:disabled) {
@@ -254,10 +271,20 @@
   font-size: 0.7rem;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 24px;
   padding: 0.2rem;
+  position: relative;
+}
+
+.year-calendar-day .day-number {
+  margin-bottom: 0.1rem;
+}
+
+.year-calendar-day.today .servico-dot {
+  background-color: #ffffff;
 }
 
 .year-calendar-day:hover:not(:disabled) {
@@ -370,6 +397,11 @@
   font-size: 1.25rem;
   color: #333;
   font-weight: bold;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .week-time-slots {
@@ -414,10 +446,18 @@
   min-height: 60px;
   box-sizing: border-box;
   min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
 }
 
 .week-time-cell:hover {
   background-color: #f5f5f5;
+}
+
+.week-time-cell .servicos-indicators {
+  margin-top: 0.25rem;
 }
 
 .week-time-cell:last-child {
@@ -426,6 +466,51 @@
 
 .week-day-header:last-child {
   border-right: none;
+}
+
+/* Estilos para indicadores de serviços */
+.servicos-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.1rem;
+}
+
+.servico-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #87ceeb;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.calendar-day.today .servico-dot,
+.year-calendar-day.today .servico-dot {
+  background-color: #ffffff;
+}
+
+.servico-count {
+  font-size: 0.6rem;
+  color: #666;
+  font-weight: 600;
+  margin-left: 0.1rem;
+}
+
+.calendar-day.today .servico-count,
+.year-calendar-day.today .servico-count {
+  color: #ffffff;
+}
+
+.week-day-number .servicos-indicators {
+  margin-top: 0;
+}
+
+.time-content .servicos-indicators {
+  justify-content: flex-start;
+  margin-top: 0.25rem;
 }
 
 
