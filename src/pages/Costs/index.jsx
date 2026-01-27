@@ -133,7 +133,7 @@ const Costs = () => {
     return `${day}/${month}/${year}`;
   };
 
-  // --- FUNÇÕES DE SALVAR ---
+
   const handleSaveExpense = async () => {
     if (formData.description && formData.value) {
       try {

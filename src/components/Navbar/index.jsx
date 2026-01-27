@@ -52,7 +52,7 @@ const Navbar = () => {
   return (
     <header className="header-nav">
     
-      <Link to="/" className="logo-section">
+      <Link to="/dashboard" className="logo-section">
         <div className="logo-icon">
           <Calendar size={24} color="#fff" />
         </div>
