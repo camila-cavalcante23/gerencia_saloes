@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
   User,
   Lock,
+  Eye,     
+  EyeOff,
 } from "lucide-react";
 import "./profile.css";
 import api from "../../services/axios";
@@ -14,6 +16,11 @@ function EmployeeProfile() {
     senha: '',
     confirmarSenha: ''
   });
+  
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -32,7 +39,6 @@ function EmployeeProfile() {
     e.preventDefault();
     setError('');
     setSuccess('');
-
 
     if (!formData.nomeCompleto || !formData.email || !formData.senha || !formData.confirmarSenha) {
       setError('Por favor, preencha todos os campos.');
@@ -93,13 +99,9 @@ function EmployeeProfile() {
 
   return (
     <div className="profile-page">
-      
-     
       <Navbar />
 
       <main className="profile-main">
-        
-       
         <div className="content-wrapper">
 
             <div className="profile-header">
@@ -156,29 +158,53 @@ function EmployeeProfile() {
                     required
                   />
                 </div>
+
+       
                 <div className="form-group">
                   <label htmlFor="senha">Senha</label>
-                  <input
-                    id="senha"
-                    type="password"
-                    placeholder="Digite a senha"
-                    value={formData.senha}
-                    onChange={handleInputChange}
-                    required
-                    minLength={6}
-                  />
+                  <div className="password-input-wrapper">
+                      <input
+                        id="senha"
+                   
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="Digite a senha"
+                        value={formData.senha}
+                        onChange={handleInputChange}
+                        required
+                        minLength={6}
+                      />
+                      <button 
+                        type="button" 
+                        className="eye-button"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                  </div>
                 </div>
+
+             
                 <div className="form-group">
                   <label htmlFor="confirmarSenha">Confirme a senha</label>
-                  <input
-                    id="confirmarSenha"
-                    type="password"
-                    placeholder="Repita a senha"
-                    value={formData.confirmarSenha}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <div className="password-input-wrapper">
+                      <input
+                        id="confirmarSenha"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Repita a senha"
+                        value={formData.confirmarSenha}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <button 
+                        type="button" 
+                        className="eye-button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                  </div>
                 </div>
+
                 <button 
                   className="primary-button" 
                   type="submit"

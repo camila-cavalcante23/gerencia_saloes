@@ -43,9 +43,12 @@ function Dashboard() {
   const loadDashboardData = async () => {
     try {
       
-      const responseTipos = await api.get('/TiposServico');
-      const tiposDisponiveis = responseTipos.data;
-      setAvailableServices(tiposDisponiveis);
+    const responseTipos = await api.get('/TiposServico');
+     const todosTipos = responseTipos.data;
+     const hiddenIds = JSON.parse(localStorage.getItem('hiddenServices') || '[]');
+     const tiposAtivos = todosTipos.filter(tipo => !hiddenIds.includes(tipo.idTipoServico));
+
+setAvailableServices(tiposAtivos);
 
     
       const responseApp = await api.get('/Servicos/hoje');
@@ -235,15 +238,19 @@ function Dashboard() {
       if(window.confirm("Confirmar falta?")) updateStatus(id, "Não compareceu");
   };
 
+
   const handleConfirmFinishDay = async () => {
     const pendingServices = services.filter(s => s.status === "Agendado");
+
     try {
+       
         if (pendingServices.length > 0) {
             await Promise.all(pendingServices.map(service => 
                 api.put(`/Servicos/${service.id}`, { id: service.id, status: "Concluido" })
             ));
         }
 
+    
         const pendingValue = pendingServices.reduce((acc, curr) => {
              const val = typeof curr.totalValue === 'number' ? curr.totalValue : parseFloat(curr.totalValue) || 0;
              return acc + val;
@@ -253,15 +260,58 @@ function Dashboard() {
         const totalFinal = currentRevenueNum + pendingValue;
         const totalFinalString = totalFinal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        alert(`Dia finalizado!\nFaturamento Final: ${totalFinalString}`);
+     
+        let isAdmin = false;
+
+   
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                const userObj = JSON.parse(storedUser);
+          
+                if (userObj.perfil === 'Admin' || userObj.role === 'Admin' || userObj.Perfil === 'Admin') {
+                    isAdmin = true;
+                }
+            } catch (e) {
+                console.log("Erro ao ler user do storage");
+            }
+        }
+
+ 
+        const storedPerfil = localStorage.getItem('perfil') || localStorage.getItem('role');
+        if (storedPerfil === 'Admin') isAdmin = true;
+
+       
+        if (isAdmin) {
+            alert(`Dia finalizado com sucesso!\nFaturamento Final: ${totalFinalString}`);
+            navigate('/lucro'); 
+        } else {
+            alert("Dia finalizado com sucesso! O sistema foi atualizado.");
+            window.location.reload();
+        }
         
-        setServices([]); 
         setIsFinishModalOpen(false);
-        navigate('/lucro'); 
         
     } catch (error) {
-        alert("Erro ao finalizar.");
+        console.error("Erro ao finalizar dia:", error);
+        alert("Erro ao tentar concluir os agendamentos. Verifique a conexão.");
     }
+  
+
+    
+    const perfilUsuario = localStorage.getItem('perfil'); 
+
+    if (perfilUsuario === 'Admin') {
+      
+        navigate('/lucro'); 
+    } else {
+
+        alert("Dia finalizado com sucesso! Bom descanso.");
+        window.location.reload(); 
+    }
+    
+    setServices([]); 
+    setIsFinishModalOpen(false);
   };
 
   const scheduledCount = services.filter((s) => !s.completed && s.status !== "Não compareceu").length;
@@ -350,8 +400,8 @@ function Dashboard() {
        {services.length === 0 ? (
             <div className="empty-state-card">
               <div className="empty-state-icon-wrapper"><Calendar size={32} color="#4a9eff" /></div>
-              <h3 className="empty-state-title">Tudo limpo por hoje</h3>
-              <p className="empty-state-subtitle">Nenhum atendimento agendado para hoje</p>
+              <h3 className="empty-state-title">Nenhum atendimento hoje</h3>
+              <p className="empty-state-subtitle">Adicione o primeiro atendimento do dia</p>
             </div>
           ) : (
             <div className="services-list">
