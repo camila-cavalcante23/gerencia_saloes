@@ -32,7 +32,6 @@ const Profits = () => {
       setEmployeesList(funcionariosResponse.data);
       
       try {
-       
         const agendamentosResponse = await api.get('/Servicos/anual'); 
         setAppointmentsList(agendamentosResponse.data);
       } catch (error) {
@@ -53,7 +52,6 @@ const Profits = () => {
   const checkFilter = (dataString) => {
     if (!dataString) return false;
     
-    
     let dataItem = dataString.toString();
     if (dataItem.includes('T')) {
         dataItem = dataItem.split('T')[0];
@@ -61,7 +59,6 @@ const Profits = () => {
         dataItem = dataItem.split(' ')[0];
     }
     
-  
     const hojeObj = new Date();
     const anoAtual = hojeObj.getFullYear();
     const mesAtual = String(hojeObj.getMonth() + 1).padStart(2, '0');
@@ -79,13 +76,12 @@ const Profits = () => {
   };
 
   useEffect(() => {
-   
+    
+
     const filteredAppointments = appointmentsList.filter(app => {
-      
       const data = app.dataServico || app.DataServico || app.data || app.date; 
       const status = app.statusServico || app.StatusServico || "";
       const isValidStatus = status === "Concluido" || status === "Concluído" || status === "Encaixe" || status === "Encaixe Rápido";
-      
       return checkFilter(data) && isValidStatus; 
     });
 
@@ -95,9 +91,16 @@ const Profits = () => {
     }, 0);
 
 
+
     const filteredExpenses = expensesList.filter(exp => {
       const data = exp.dataDespesa || exp.DataDespesa || exp.data;
-      return checkFilter(data);
+      
+    
+      const temFuncionarioVinculado = exp.idFuncionario !== null && exp.idFuncionario !== undefined || 
+                                      exp.IdFuncionario !== null && exp.IdFuncionario !== undefined;
+
+
+      return checkFilter(data) && !temFuncionarioVinculado;
     });
 
     const totalExpenses = filteredExpenses.reduce((acc, curr) => {
@@ -106,6 +109,7 @@ const Profits = () => {
     }, 0);
 
 
+ 
     const totalMonthlySalaries = employeesList.reduce((acc, emp) => {
         const val = typeof emp.salario === 'number' ? emp.salario : parseFloat(emp.salary || 0);
         return acc + val;
@@ -113,14 +117,13 @@ const Profits = () => {
 
     let calculatedSalaries = 0;
     if (timeFilter === 'today') {
-      
-        calculatedSalaries = 0; 
+   
+        calculatedSalaries = totalMonthlySalaries / 30; 
     } else if (timeFilter === 'month') {
         calculatedSalaries = totalMonthlySalaries;
     } else if (timeFilter === 'year') {
         calculatedSalaries = totalMonthlySalaries * 12; 
     }
-
 
     setRevenue(totalRevenue);
     setExpenses(totalExpenses);
@@ -163,7 +166,7 @@ const Profits = () => {
 
             <div className="profit-cards-grid">
               
-       
+        
               <div className="profit-card green-theme">
                 <div className="card-header">
                   <div className="card-icon-box">
@@ -175,7 +178,7 @@ const Profits = () => {
                 <p className="card-subtext">{countServices} serviços realizados</p>
               </div>
 
-     
+       
               <div className="profit-card red-theme">
                 <div className="card-header">
                   <div className="card-icon-box">
@@ -185,8 +188,8 @@ const Profits = () => {
                 </div>
                 <h3 className="card-value">{formatCurrency(totalCosts)}</h3>
                 <div className="card-details">
-                  <p>Despesas: {formatCurrency(expenses)}</p>
-                  <p>Salários: {formatCurrency(salaries)}</p>
+                  <p>Despesas Gerais: {formatCurrency(expenses)}</p>
+                  <p>Folha Salarial: {formatCurrency(salaries)}</p>
                 </div>
               </div>
 
@@ -219,7 +222,7 @@ const Profits = () => {
               </div>
             </div>
 
-       
+         
             <div className="formula-section">
               <h3>Detalhamento do Cálculo</h3>
               
@@ -237,7 +240,7 @@ const Profits = () => {
                   <span className="calc-value red-text">-{formatCurrency(expenses)}</span>
                 </div>
                 <div className="calc-row">
-                  <span className="calc-label">Folha Salarial ({timeFilter === 'year' ? 'Anual' : 'Mensal'})</span>
+                  <span className="calc-label">Folha Salarial ({timeFilter === 'year' ? 'Anual' : (timeFilter === 'today' ? 'Diária' : 'Mensal')})</span>
                   <span className="calc-value red-text">-{formatCurrency(salaries)}</span>
                 </div>
 
