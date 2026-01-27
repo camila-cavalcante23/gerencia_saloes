@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Scissors, 
   X, 
@@ -6,20 +6,12 @@ import {
   Trash2, 
   Save 
 } from 'lucide-react';
+import api from '../../services/axios'; 
 import Navbar from '../../components/Navbar';
 import './Services.css';
 
 function Services() {
-  const [services, setServices] = useState([
-    {
-      id: 1,
-      name: 'Barba',
-      value: 10.00,
-      duration: '20 min',
-      category: 'Cabelo',
-      active: true
-    }
-  ]);
+  const [services, setServices] = useState([]); 
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
@@ -28,6 +20,31 @@ function Services() {
     value: '',
     duration: ''
   });
+
+  const loadServices = async () => {
+    try {
+      const response = await api.get('/TiposServico');
+      
+      console.log("Dados recebidos do Backend:", response.data); 
+
+      const formattedServices = response.data.map(item => ({
+        id: item.idTipoServico, 
+        name: item.nomeServico, 
+        value: item.valorPadrao ?? 0, 
+        duration: item.duracaoMinutos ? `${item.duracaoMinutos} min` : '',
+        category: 'Geral',
+        active: true
+      }));
+
+      setServices(formattedServices);
+    } catch (error) {
+      console.error("Erro ao carregar serviços", error);
+    }
+  };
+
+  useEffect(() => {
+    loadServices();
+  }, []);
 
   const handleOpenModal = () => {
     setEditingService(null);
@@ -49,46 +66,81 @@ function Services() {
     }));
   };
 
-  const handleSave = () => {
+const handleSave = async () => {
+   
     if (!formData.name || !formData.value) {
+      alert("Nome e Valor são obrigatórios!");
       return;
     }
 
-    if (editingService) {
-      setServices(services.map(service => 
-        service.id === editingService.id
-          ? {
-              ...service,
-              name: formData.name,
-              value: parseFloat(formData.value.replace(',', '.').replace('R$', '').trim()),
-              duration: formData.duration || service.duration
-            }
-          : service
-      ));
-    } else {
-      const newService = {
-        id: Date.now(),
-        name: formData.name,
-        value: parseFloat(formData.value.replace(',', '.').replace('R$', '').trim()),
-        duration: formData.duration || '',
-        category: 'Geral',
-        active: true
-      };
-      setServices([...services, newService]);
-    }
+    try {
+       
+        let priceValue = 0;
+        
+        if (typeof formData.value === 'number') {
+            priceValue = formData.value;
+        } else {
+            const cleanValue = formData.value.toString().replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+            priceValue = parseFloat(cleanValue);
+        }
 
-    handleCloseModal();
+        if (isNaN(priceValue)) priceValue = 0;
+
+        const durationValue = parseInt(formData.duration.replace(/\D/g, '')) || 0;
+
+      const payload = {
+    
+    Nome: formData.name,       
+    valorPadrao: priceValue,   
+    
+    duracaoMinutos: durationValue
+};
+
+        console.log("Enviando Payload:", payload); 
+
+        if (editingService) {
+          
+            const payloadComId = { ...payload, idTipoServico: editingService.id };
+            
+            await api.put(`/TiposServico/${editingService.id}`, payloadComId);
+        } else {
+          
+            await api.post('/TiposServico', payload);
+        }
+
+        await loadServices();
+        handleCloseModal();
+
+    } catch (error) {
+        console.error("Erro ao salvar:", error);
+        
+       
+        if (error.response && error.response.data) {
+             const mensagemErro = JSON.stringify(error.response.data);
+             console.log("O servidor respondeu:", error.response.data);
+             alert(`O servidor recusou: ${mensagemErro}`);
+        } else {
+             alert("Erro ao salvar. Verifique se o backend está rodando.");
+        }
+    }
   };
+
 
   const handleEdit = (service) => {
     setEditingService(service);
+    
+   
+    const valorSeguro = (typeof service.value === 'number') ? service.value : 0;
+
     setFormData({
       name: service.name,
-      value: service.value.toFixed(2).replace('.', ','),
+     
+      value: valorSeguro.toFixed(2).replace('.', ','),
       duration: service.duration
     });
     setIsModalOpen(true);
   };
+
 
   const handleDeactivate = (serviceId) => {
     setServices(services.map(service =>
@@ -98,17 +150,16 @@ function Services() {
     ));
   };
 
-  const handleDelete = (serviceId) => {
-    if (window.confirm('Tem certeza que deseja excluir este serviço?')) {
-      setServices(services.filter(service => service.id !== serviceId));
-    }
-  };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const handleDelete = async (serviceId) => {
+    if (window.confirm('Tem certeza que deseja excluir este serviço?')) {
+      try {
+          await api.delete(`/TiposServico/${serviceId}`);
+          setServices(services.filter(service => service.id !== serviceId));
+      } catch (error) {
+          alert("Erro ao excluir. Tente novamente.");
+      }
+    }
   };
 
   return (
@@ -158,7 +209,12 @@ function Services() {
                   <div className="service-info">
                     <div className="info-item">
                       <span className="info-label">Valor Padrão:</span>
-                      <span className="info-value green">R${service.value.toFixed(2)}</span>
+                      <span className="info-value green">
+                     
+                        R$ {service.value !== undefined && service.value !== null 
+                            ? Number(service.value).toFixed(2).replace('.', ',') 
+                            : '0,00'}
+                      </span>
                     </div>
                     {service.duration && (
                       <div className="info-item">
@@ -197,7 +253,7 @@ function Services() {
         </div>
       </main>
 
-      {/* Modal */}
+
       {isModalOpen && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -234,7 +290,7 @@ function Services() {
                   type="text"
                   id="value"
                   name="value"
-                  placeholder="R$ 0,00"
+                  placeholder="0,00"
                   value={formData.value}
                   onChange={handleInputChange}
                 />
@@ -242,13 +298,13 @@ function Services() {
 
               <div className="form-group">
                 <label htmlFor="duration">
-                  Duração (opcional)
+                  Duração (em minutos)
                 </label>
                 <input
                   type="text"
                   id="duration"
                   name="duration"
-                  placeholder="Ex: 30 minutos"
+                  placeholder="Ex: 30"
                   value={formData.duration}
                   onChange={handleInputChange}
                 />

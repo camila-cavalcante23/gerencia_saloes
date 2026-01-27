@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar,
   Home,
@@ -7,10 +7,13 @@ import {
   Zap,
   Star,
   Trash2,
-  Clock 
+  Clock,
+  CalendarDays
 } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 import "./dashboard.css";
 
+import api from "../../services/axios"; 
 import Navbar from "../../components/Navbar"; 
 import NewAppointmentModal from "../../components/NewAppointmentModal";
 import QuickFitInModal from "../../components/QuickFitInModal";
@@ -21,133 +24,281 @@ function Dashboard() {
   const [isQuickFitModalOpen, setIsQuickFitModalOpen] = useState(false);
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
 
-  const [services, setServices] = useState([
-    {       
-      id: 1,
-      time: "10:00",
-      client: "Mila",
-      status: "Agendado",
-      statusColor: "purple",
-      totalValue: "R$ 70,00",
-      completed: false,
-      type: "agendado",
-    },
-    {
-      id: 2,
-      time: "10:09",
-      client: "Mila",
-      status: "Encaixe",
-      statusColor: "yellow",
-      totalValue: "R$ 70,00",
-      completed: true,
-      type: "encaixe",
-    },
-  ]);
+  const [services, setServices] = useState([]); 
+  const [availableServices, setAvailableServices] = useState([]); 
+  
 
+  const [nextAppointments, setNextAppointments] = useState([]);
 
+  const navigate = useNavigate();
 
-  const handleAddService = (newServiceData) => {
-    const newService = {
-      id: Date.now(),
-      time: newServiceData.time,
-      client: newServiceData.client,
-      status: "Agendado",
-      statusColor: "purple",
-      totalValue: newServiceData.value || "R$ 0,00",
-      completed: false,
-      type: "agendado",
-    };
-    setServices((prev) => [...prev, newService].sort((a, b) => a.time.localeCompare(b.time)));
+  const getLocalDate = () => {
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`; 
   };
 
-  const handleAddQuickFitIn = (data) => {
-    const now = new Date();
-    const currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const quantity = parseInt(data.quantity) || 1;
-    const newFitIns = [];
+  const loadDashboardData = async () => {
+    try {
+      
+      const responseTipos = await api.get('/TiposServico');
+      const tiposDisponiveis = responseTipos.data;
+      setAvailableServices(tiposDisponiveis);
+
     
-    for (let i = 0; i < quantity; i++) {
-        newFitIns.push({
-            id: Date.now() + i,
-            time: currentTime,
-            client: `Encaixe - ${data.service}`, 
-            status: "Encaixe",
-            statusColor: "yellow",
-            totalValue: data.value,
-            completed: true,
-            type: "encaixe",
-        });
+      const responseApp = await api.get('/Servicos/hoje');
+      const hojeStr = getLocalDate();
+
+     
+      const formattedAppointments = responseApp.data.map(app => {
+        const idSeguro = app.idServico || app.IdServico || app.id;
+        const clienteSeguro = app.clienteNome || app.ClienteNome || "Cliente";
+        const dataRaw = app.dataServico || app.DataServico || app.data;
+        const dataItemStr = dataRaw ? dataRaw.split('T')[0] : ""; 
+
+        let idTipoServicoSeguro = app.idTipoServico || app.IdTipoServico || 0;
+        if (idTipoServicoSeguro === 0 && tiposDisponiveis.length > 0) {
+             const servicoEncontrado = tiposDisponiveis.find(tipo => 
+                 clienteSeguro.toLowerCase().includes(tipo.nomeServico.toLowerCase())
+             );
+             if (servicoEncontrado) idTipoServicoSeguro = servicoEncontrado.idTipoServico;
+        }
+
+        const horarioRaw = app.horario || app.Horario;
+        const timeSeguro = horarioRaw 
+            ? (horarioRaw.includes('T') ? horarioRaw.substring(11, 16) : horarioRaw.substring(0, 5)) 
+            : "00:00";
+
+        const valorSeguro = app.valorCobrado || app.ValorCobrado || app.valor || 0;
+        const statusSeguro = app.statusServico || app.StatusServico || app.status || "Agendado";
+        const tipoSeguro = app.observacoes === "Encaixe Rápido" ? "encaixe" : "agendado";
+        const isCompleted = statusSeguro === "Concluído" || statusSeguro === "Concluido" || statusSeguro === "Encaixe";
+
+        return {
+            id: idSeguro, 
+            time: timeSeguro,
+            date: dataItemStr,
+            client: clienteSeguro,
+            status: statusSeguro,
+            statusColor: getStatusColor(statusSeguro),
+            totalValue: valorSeguro,
+            completed: isCompleted,
+            type: tipoSeguro,
+            serviceTypeId: idTipoServicoSeguro
+        };
+      })
+      .filter(item => item.id !== undefined && item.id !== null)
+      .filter(item => item.date === hojeStr) 
+      .sort((a, b) => {
+          if (a.completed === b.completed) return a.time.localeCompare(b.time);
+          return a.completed ? 1 : -1; 
+      });
+
+      setServices(formattedAppointments);
+
+      
+      try {
+          const responseAnual = await api.get('/Servicos/anual'); 
+          
+          const futuros = responseAnual.data
+            .map(app => {
+                const dataRaw = app.dataServico || app.DataServico || app.data;
+                const dataItemStr = dataRaw ? dataRaw.split('T')[0] : "";
+                
+                return {
+                    id: app.idServico || app.IdServico,
+                    client: app.clienteNome || app.ClienteNome,
+                    date: dataItemStr,
+                    time: app.horario || app.Horario,
+                    status: app.statusServico || app.StatusServico
+                };
+            })
+            .filter(item => item.date > hojeStr) 
+            .filter(item => item.status !== "Cancelado" && item.status !== "Deletado") 
+            .sort((a, b) => a.date.localeCompare(b.date)); 
+
+   
+          setNextAppointments(futuros.slice(0, 5)); 
+
+      } catch (err) {
+          console.warn("Não foi possível carregar futuros", err);
+      }
+
+    } catch (error) {
+      console.error("Erro dashboard:", error);
     }
-    setServices((prev) => [...prev, ...newFitIns].sort((a, b) => a.time.localeCompare(b.time)));
   };
 
-  const handleDeleteService = (idToDelete) => {
-    if (window.confirm("Tem certeza que deseja excluir este agendamento?")) {
-      setServices((prev) => prev.filter(service => service.id !== idToDelete));
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const getStatusColor = (status) => {
+      if (status === "Concluído" || status === "Concluido") return "green";
+      if (status === "Não compareceu") return "red";
+      if (status === "Encaixe") return "yellow";
+      return "purple";
+  };
+
+
+  const handleAddService = async (newServiceData) => {
+    try {
+        const timeStr = newServiceData.time; 
+        const dateToSave = newServiceData.date || getLocalDate(); 
+
+        const serviceObj = availableServices.find(s => s.nomeServico === newServiceData.service);
+        const serviceId = serviceObj ? serviceObj.idTipoServico : 0;
+        const val = typeof newServiceData.value === 'string' 
+            ? parseFloat(newServiceData.value.replace("R$", "").replace(/\./g, "").replace(",", ".")) 
+            : newServiceData.value;
+
+        const payload = {
+            Horario: timeStr,      
+            DataServico: dateToSave,
+            ClienteNome: `${newServiceData.client} - ${newServiceData.service}`,
+            ValorCobrado: val || 0, 
+            StatusServico: "Agendado",
+            IdTipoServico: serviceId 
+        };
+        
+        await api.post('/Servicos/agendar', payload);
+        await loadDashboardData();
+        setIsModalOpen(false);
+    } catch (error) {
+        if (error.response?.data) alert(`Erro: ${JSON.stringify(error.response.data)}`);
+    }
+  };
+
+  const handleAddQuickFitIn = async (data) => {
+    try {
+        const now = new Date();
+        const horas = now.getHours().toString().padStart(2, '0');
+        const minutos = now.getMinutes().toString().padStart(2, '0');
+        const timeStr = `${horas}:${minutos}`; 
+        const dateStr = getLocalDate();
+
+        const serviceObj = availableServices.find(s => s.nomeServico === data.service);
+        const serviceId = serviceObj ? serviceObj.idTipoServico : 0;
+
+        const quantity = parseInt(data.quantity) || 1;
+        const valTotal = typeof data.value === 'string' 
+            ? parseFloat(data.value.replace("R$", "").replace(/\./g, "").replace(",", ".")) 
+            : data.value;
+        const valUnitario = valTotal / quantity;
+
+        for (let i = 0; i < quantity; i++) {
+            const payload = {
+                Horario: timeStr, 
+                DataServico: dateStr, 
+                ClienteNome: `Encaixe - ${data.service}`,
+                ValorCobrado: valUnitario, 
+                StatusServico: "Concluido", 
+                Observacoes: "Encaixe Rápido", 
+                IdTipoServico: serviceId
+            };
+            await api.post('/Servicos/encaixe', payload);
+        }
+        
+        await loadDashboardData();
+        setIsQuickFitModalOpen(false);
+    } catch (error) {
+        if (error.response?.data) alert(`Erro: ${JSON.stringify(error.response.data)}`);
+    }
+  };
+
+  const handleDeleteService = async (idToDelete) => {
+    if (window.confirm("Tem certeza que deseja excluir?")) {
+        try {
+            await api.delete(`/Servicos/${idToDelete}`);
+            setServices((prev) => prev.filter(service => service.id !== idToDelete));
+        } catch (error) {
+            alert("Erro ao excluir");
+        }
     }
   };
   
-  const handleCompleteService = (idToComplete) => {
-      setServices((prev) =>
-        prev.map(service => 
-            service.id === idToComplete 
-            ? { ...service, completed: true, status: "Concluído", statusColor: "green" } 
-            : service
-        )
-      );
+  const updateStatus = async (id, newStatus) => {
+      const payload = { id: id, status: newStatus };
+      try {
+          await api.put(`/Servicos/${id}`, payload);
+          await loadDashboardData();
+      } catch (error) {
+          console.error(error);
+             alert("Erro ao atualizar status.");
+      }
+  }
+
+  const handleCompleteService = (id) => updateStatus(id, "Concluido"); 
+  const handleNoShowService = (id) => {
+      if(window.confirm("Confirmar falta?")) updateStatus(id, "Não compareceu");
   };
 
-  const handleNoShowService = (idNoShow) => {
-    if (window.confirm("Confirmar que o cliente não compareceu?")) {
-      setServices((prev) =>
-        prev.map(service => 
-            service.id === idNoShow 
-            ? { ...service, completed: true, status: "Não compareceu", statusColor: "red" } 
-            : service
-        )
-      );
+  const handleConfirmFinishDay = async () => {
+    const pendingServices = services.filter(s => s.status === "Agendado");
+    try {
+        if (pendingServices.length > 0) {
+            await Promise.all(pendingServices.map(service => 
+                api.put(`/Servicos/${service.id}`, { id: service.id, status: "Concluido" })
+            ));
+        }
+
+        const pendingValue = pendingServices.reduce((acc, curr) => {
+             const val = typeof curr.totalValue === 'number' ? curr.totalValue : parseFloat(curr.totalValue) || 0;
+             return acc + val;
+        }, 0);
+        
+        const currentRevenueNum = parseFloat(todayRevenue.replace("R$", "").replace(/\./g, "").replace(",", ".")) || 0;
+        const totalFinal = currentRevenueNum + pendingValue;
+        const totalFinalString = totalFinal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        alert(`Dia finalizado!\nFaturamento Final: ${totalFinalString}`);
+        
+        setServices([]); 
+        setIsFinishModalOpen(false);
+        navigate('/lucro'); 
+        
+    } catch (error) {
+        alert("Erro ao finalizar.");
     }
   };
 
-  
-  const handleConfirmFinishDay = () => {
-    
-    alert(`Dia finalizado com sucesso!\nFaturamento Total: ${todayRevenue}`);
-    
-    setServices([]); 
-    setIsFinishModalOpen(false); 
-  };
-
-  
   const scheduledCount = services.filter((s) => !s.completed && s.status !== "Não compareceu").length;
-  
-
-  const completedCount = services.filter((s) => s.completed && s.status !== "Não compareceu").length;
-  
-
+  const completedCount = services.filter((s) => s.completed).length;
   const noShowCount = services.filter((s) => s.status === "Não compareceu").length;
   
-
   const todayRevenueValue = services.reduce((acc, curr) => {
-      if (curr.status === "Não compareceu") return acc;
-      const valueString = curr.totalValue.toString().replace("R$", "").replace(/\./g, "").replace(",", ".").trim();
-      return acc + (parseFloat(valueString) || 0);
+      if (!curr.completed) return acc; 
+      const val = typeof curr.totalValue === 'number' ? curr.totalValue : parseFloat(curr.totalValue) || 0;
+      return acc + val;
   }, 0);
+  
   const todayRevenue = `R$ ${todayRevenueValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
-
   const today = new Date();
-  const daysOfWeek = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
-  const months = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-  const formattedDate = `${daysOfWeek[today.getDay()]}, ${today.getDate()} de ${months[today.getMonth()]}`;
+  const formattedDate = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   const fullDateString = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+
+  const formatDateShort = (dateStr) => {
+      if(!dateStr) return "";
+      const parts = dateStr.split('-');
+      return `${parts[2]}/${parts[1]}`;
+  }
+  
+
+  const formatTimeShort = (timeStr) => {
+      if(!timeStr) return "";
+      if(timeStr.includes('T')) return timeStr.substring(11, 16);
+      return timeStr.substring(0, 5);
+  }
 
   return (
     <div className="dashboard-page">
       <Navbar />
 
       <main className="dashboard-main">
-       
         <div className="dashboard-header">
           <div className="dashboard-title-section">
             <div className="dashboard-title-icon"><Home size={32} /></div>
@@ -158,12 +309,11 @@ function Dashboard() {
           </div>
         </div>
 
-      
         <div className="summary-cards">
           <div className="summary-card">
             <div className="summary-icon"><Calendar size={24} /></div>
             <div className="summary-content">
-              <p className="summary-label">AGENDADOS</p>
+              <p className="summary-label">PENDENTES</p>
               <p className="summary-value">{scheduledCount}</p>
             </div>
           </div>
@@ -177,40 +327,31 @@ function Dashboard() {
           <div className="summary-card">
             <div className="summary-icon"><DollarSign size={24} /></div>
             <div className="summary-content">
-              <p className="summary-label">FATURAMENTO HOJE</p>
+              <p className="summary-label">FATURAMENTO</p>
               <p className="summary-value">{todayRevenue}</p>
             </div>
           </div>
         </div>
 
-      
         <div className="action-buttons">
           <button className="action-btn primary" onClick={() => setIsModalOpen(true)}>
-            <Calendar size={18} />
-            <span>Agendar Serviço</span>
+            <Calendar size={18} /> <span>Agendar Serviço</span>
           </button>
-          
           <button className="action-btn secondary" onClick={() => setIsQuickFitModalOpen(true)}>
-            <Zap size={18} />
-            <span>Adicionar Encaixe</span>
+            <Zap size={18} /> <span>Adicionar Encaixe</span>
           </button>
-
           <button className="action-btn tertiary" onClick={() => setIsFinishModalOpen(true)}>
-            <Star size={18} />
-            <span>Finalizar Dia</span>
+            <Star size={18} /> <span>Finalizar Dia</span>
           </button>
         </div>
 
-      
         <div className="services-section">
           <h3 className="services-title">Atendimento de Hoje</h3>
        {services.length === 0 ? (
             <div className="empty-state-card">
-              <div className="empty-state-icon-wrapper">
-                <Calendar size={32} color="#4a9eff" />
-              </div>
-              <h3 className="empty-state-title">Nenhum atendimento hoje</h3>
-              <p className="empty-state-subtitle">Adicione o primeiro atendimento do dia</p>
+              <div className="empty-state-icon-wrapper"><Calendar size={32} color="#4a9eff" /></div>
+              <h3 className="empty-state-title">Tudo limpo por hoje</h3>
+              <p className="empty-state-subtitle">Nenhum atendimento agendado para hoje</p>
             </div>
           ) : (
             <div className="services-list">
@@ -224,13 +365,15 @@ function Dashboard() {
                     <p className="service-client">{service.client}</p>
                     <div className="service-tags">
                       <span className={`service-tag ${service.statusColor}`}>{service.status}</span>
-                      {service.completed && service.status !== "Não compareceu" && <span className="service-tag green">Concluído</span>}
+                      {service.completed && service.status !== "Não compareceu" && service.status !== "Concluído" && service.status !== "Concluido" && (
+                        <span className="service-tag green">Concluído</span>
+                      )}
                     </div>
                   </div>
                   <div className="service-actions">
                     <div className="service-value">
                       <p className="value-label">Valor Total</p>
-                      <p className="value-amount">{service.totalValue}</p>
+                      <p className="value-amount">R$ {typeof service.totalValue === 'number' ? service.totalValue.toFixed(2).replace('.', ',') : service.totalValue}</p>
                     </div>
                     <div className="service-buttons">
                       {!service.completed && (
@@ -249,36 +392,35 @@ function Dashboard() {
             </div>
           )}
         </div>
+
+    
+        {nextAppointments.length > 0 && (
+            <div className="future-section">
+                <div className="future-header">
+                    <CalendarDays size={20} color="#666" />
+                    <h3>Próximos Agendamentos</h3>
+                </div>
+                <div className="future-grid">
+                    {nextAppointments.map(app => (
+                        <div key={app.id} className="future-card">
+                            <div className="future-date-badge">
+                                {formatDateShort(app.date)}
+                            </div>
+                            <div className="future-info">
+                                <p className="future-client">{app.client}</p>
+                                <p className="future-time">{formatTimeShort(app.time)}h</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
+
       </main>
 
-
-      
-      <NewAppointmentModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSave={handleAddService} 
-      />
-
-      <QuickFitInModal 
-        isOpen={isQuickFitModalOpen} 
-        onClose={() => setIsQuickFitModalOpen(false)} 
-        onSave={handleAddQuickFitIn} 
-      />
-
-      
-      <FinishDayModal
-        isOpen={isFinishModalOpen}
-        onClose={() => setIsFinishModalOpen(false)}
-        onConfirm={handleConfirmFinishDay} 
-        summary={{
-            date: fullDateString,
-            completed: completedCount,
-            noShow: noShowCount,
-            pending: scheduledCount,
-            revenue: todayRevenue
-        }}
-      />
-
+      <NewAppointmentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleAddService} servicesList={availableServices} />
+      <QuickFitInModal isOpen={isQuickFitModalOpen} onClose={() => setIsQuickFitModalOpen(false)} onSave={handleAddQuickFitIn} servicesList={availableServices} />
+      <FinishDayModal isOpen={isFinishModalOpen} onClose={() => setIsFinishModalOpen(false)} onConfirm={handleConfirmFinishDay} summary={{ date: fullDateString, completed: completedCount, noShow: noShowCount, pending: scheduledCount, revenue: todayRevenue }} />
     </div>
   );
 }

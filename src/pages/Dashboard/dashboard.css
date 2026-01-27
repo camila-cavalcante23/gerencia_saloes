@@ -365,6 +365,85 @@
 }
 
 
+.future-section {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #e5e7eb;
+  opacity: 0.9; 
+}
+
+.future-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.future-header h3 {
+  font-size: 1.1rem;
+  color: #4b5563;
+  font-weight: 600;
+  margin: 0;
+}
+
+.future-grid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto; 
+  padding-bottom: 10px;
+}
+
+
+.future-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  transition: transform 0.2s;
+}
+
+.future-card:hover {
+    transform: translateY(-2px);
+    border-color: #d1d5db;
+}
+
+.future-date-badge {
+  background-color: #F3F4F6;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  align-self: flex-start;
+}
+
+.future-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.future-client {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.future-time {
+  font-size: 0.8rem;
+  color: #6B7280;
+  margin: 2px 0 0 0;
+}
+
 @media (max-width: 768px) {
   
   

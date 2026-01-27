@@ -3,10 +3,9 @@ import { X, Save, Calendar } from 'lucide-react';
 import './modal.css';
 
 
-const NewAppointmentModal = ({ isOpen, onClose, onSave }) => {
- 
+const NewAppointmentModal = ({ isOpen, onClose, onSave, servicesList = [] }) => {
   const [formData, setFormData] = useState({
-    date: '',
+    date: new Date().toISOString().split('T')[0], 
     time: '',
     client: '',
     phone: '',
@@ -19,25 +18,34 @@ const NewAppointmentModal = ({ isOpen, onClose, onSave }) => {
 
   const handleModalClick = (e) => e.stopPropagation();
 
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+   
+    if (name === 'service') {
+        const selectedService = servicesList.find(s => s.nomeServico === value);
+        let price = '';
+        if (selectedService) {
+            price = selectedService.valorPadrao.toFixed(2).replace('.', ',');
+        }
+        
+        setFormData(prev => ({ 
+            ...prev, 
+            [name]: value,
+            value: `R$ ${price}` 
+        }));
+    } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
- 
   const handleSubmit = (e) => {
     e.preventDefault(); 
-    
- 
     if (!formData.client || !formData.time || !formData.service) {
       alert("Por favor, preencha pelo menos Nome, Horário e Serviço.");
       return;
     }
-
     onSave(formData); 
-    
- 
     setFormData({ date: '', time: '', client: '', phone: '', service: '', value: '', notes: '' });
     onClose();
   };
@@ -116,9 +124,11 @@ const NewAppointmentModal = ({ isOpen, onClose, onSave }) => {
                 onChange={handleChange}
               >
                 <option value="" disabled>Selecione o serviço</option>
-                <option value="Corte">Corte</option>
-                <option value="Barba">Barba</option>
-                <option value="Completo">Completo</option>
+                {servicesList.map((item) => (
+                    <option key={item.idTipoServico} value={item.nomeServico}>
+                        {item.nomeServico}
+                    </option>
+                ))}
               </select>
             </div>
             <div className="form-group">

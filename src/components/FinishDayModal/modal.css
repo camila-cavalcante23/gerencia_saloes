@@ -143,6 +143,32 @@
 .btn-confirm:hover { background-color: #059669; }
 
 
+
+.warning-box {
+  background-color: #FFF7ED;
+  border: 1px solid #FDBA74; 
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  color: #9A3412;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  animation: fadeIn 0.5s ease;
+}
+
+.warning-box strong {
+    font-weight: 700;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
 @media (max-width: 600px) {
   .stats-row {
     grid-template-columns: 1fr; 
