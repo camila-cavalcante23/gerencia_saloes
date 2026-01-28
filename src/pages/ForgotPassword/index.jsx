@@ -18,8 +18,11 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
+      const frontendUrl = window.location.origin;
+      
       await api.post('/Usuario/esqueceu-senha', {
-        email: email
+        email: email,
+        urlFrontend: frontendUrl
       });
 
       setSuccess('Se o e-mail existir, enviaremos um link para recuperação de senha!');
