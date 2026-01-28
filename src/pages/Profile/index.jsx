@@ -208,28 +208,7 @@ const handleSaveProfile = async () => {
   };
 
   const handleDeleteAccount = async () => {
-    let currentUserId = userId;
-    
-    if (!currentUserId) {
-      try {
-        const usuarioStr = localStorage.getItem('usuario');
-        if (usuarioStr) {
-          const usuario = JSON.parse(usuarioStr);
-          currentUserId = usuario.id || usuario.Id || usuario.idUsuario || usuario.IdUsuario;
-          if (currentUserId) {
-            setUserId(currentUserId);
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao ler ID do usuário:', error);
-      }
-    }
-
-    if (!currentUserId) {
-      alert('ID do usuário não encontrado. Por favor, faça login novamente.');
-      return;
-    }
-
+   
     if (!window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita!')) {
       return;
     }
@@ -239,20 +218,25 @@ const handleSaveProfile = async () => {
     }
 
     setDeletingAccount(true);
+    
     try {
-      await api.delete(`/Usuario/${currentUserId}`, {
-        data: { id: currentUserId }
-      });
       
-      alert('Conta excluída com sucesso.');
-      handleLogout();
+      await api.delete('/Usuario/excluir-conta');
+      
+      alert('Sua conta foi excluída com sucesso. Sentiremos sua falta!');
+      handleLogout(); 
+      
     } catch (error) {
       console.error('Erro ao excluir conta:', error);
-      alert(
-        error.response?.data?.message || 
-        error.response?.data?.erro || 
-        'Erro ao excluir conta. Tente novamente.'
-      );
+      
+      let msg = 'Erro ao excluir conta.';
+      
+      if (error.response?.data) {
+          
+           msg = error.response.data.message || error.response.data || msg;
+      }
+
+      alert(msg);
     } finally {
       setDeletingAccount(false);
     }
