@@ -240,7 +240,7 @@ const handleSaveProfile = async () => {
 
     setDeletingAccount(true);
     try {
-      await api.delete(`/Usuario/${currentUserId}`, {
+      await api.delete('/Usuario/excluir-conta', {
         data: { id: currentUserId }
       });
       
@@ -469,33 +469,36 @@ const handleSaveProfile = async () => {
             </section>
 
             <section className="logout-section">
-              <button 
-                className="view-employees-button" 
-                type="button" 
-                onClick={handleOpenEmployeesModal}
-              >
-                <Users size={18} />
-                <span>Ver Funcionários</span>
-              </button>
-              
-              <button 
-                className="delete-account-button"
-                type="button" 
-                onClick={handleDeleteAccount}
-                disabled={deletingAccount}
-              >
-                {deletingAccount ? (
-                  <>
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #ff8c42', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    <span>Excluindo...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={18} />
-                    <span>Excluir Conta</span>
-                  </>
-                )}
-              </button>
+              {isAdmin && (
+                <button 
+                  className="view-employees-button" 
+                  type="button" 
+                  onClick={handleOpenEmployeesModal}
+                >
+                  <Users size={18} />
+                  <span>Ver Funcionários</span>
+                </button>
+              )}
+              {isAdmin && (
+                <button 
+                  className="delete-account-button"
+                  type="button" 
+                  onClick={handleDeleteAccount}
+                  disabled={deletingAccount}
+                >
+                  {deletingAccount ? (
+                    <>
+                      <div style={{ width: '18px', height: '18px', border: '2px solid #ff8c42', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                      <span>Excluindo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      <span>Excluir Conta</span>
+                    </>
+                  )}
+                </button>
+              )}
               
               <button className="logout-button" type="button" onClick={handleLogout}>
                 <LogOut size={18} />
