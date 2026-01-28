@@ -24,10 +24,9 @@ dist-ssr
 *.sw?
 
 # Arquivos de ambiente (Segurança)
-.env
 .env.test
 .env.production
-.env.local  <-- Adicione esta linha aqui
-
+.env
+.env.local
 # Arquivos de sistema (Windows)
 Thumbs.db
