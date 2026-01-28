@@ -112,6 +112,8 @@ const handleSaveProfile = async () => {
          
           const usuarioStr = localStorage.getItem('usuario');
           const usuarioAtual = JSON.parse(usuarioStr || '{}');
+
+        
           const emailOriginal = usuarioAtual.email || usuarioAtual.Email;
           if (profileData.emailNovo !== emailOriginal) {
               if (profileData.emailAnterior !== emailOriginal) {
@@ -120,29 +122,29 @@ const handleSaveProfile = async () => {
               }
           }
 
-   
+         
           const payload = {
               id: userId,
               nome: profileData.nome,
               email: profileData.emailNovo,
-              senha: usuarioAtual.senha || usuarioAtual.Senha, 
               perfil: usuarioAtual.perfil || usuarioAtual.Perfil,
-              telefone: usuarioAtual.telefone || usuarioAtual.Telefone || "",
+              telefone: usuarioAtual.telefone || usuarioAtual.Telefone,
               dataAdmissao: usuarioAtual.dataAdmissao || usuarioAtual.DataAdmissao
+             
           };
 
-       
           await api.put(`/Usuario/${userId}`, payload);
 
-       
-          localStorage.setItem('usuario', JSON.stringify(payload));
+        
+          const novoUsuario = { ...usuarioAtual, ...payload };
+          localStorage.setItem('usuario', JSON.stringify(novoUsuario));
 
-          alert("Dados atualizados com sucesso!");
+          alert("Perfil atualizado com sucesso!");
           setProfileData(prev => ({ ...prev, emailAnterior: '' })); 
 
       } catch (error) {
           console.error("Erro ao atualizar perfil:", error);
-          alert("Erro ao salvar. Verifique se o e-mail já existe.");
+          alert("Erro ao salvar. Verifique os dados.");
       } finally {
           setLoadingProfile(false);
       }
@@ -163,44 +165,48 @@ const handleSaveProfile = async () => {
       setLoadingPassword(true);
 
       try {
-          
-          const usuarioStr = localStorage.getItem('usuario');
-          const usuarioAtual = JSON.parse(usuarioStr || '{}');
-
-          
-          const senhaSalva = usuarioAtual.senha || usuarioAtual.Senha;
-          if (senhaSalva && senhaSalva !== passwordData.senhaAtual) {
-              setLoadingPassword(false);
-              return alert("A senha atual informada está incorreta.");
-          }
-
-     
+         
           const payload = {
-              id: userId,
-              nome: usuarioAtual.nome || usuarioAtual.Nome,
-              email: usuarioAtual.email || usuarioAtual.Email,
-              perfil: usuarioAtual.perfil || usuarioAtual.Perfil,
-              telefone: usuarioAtual.telefone || usuarioAtual.Telefone,
-              dataAdmissao: usuarioAtual.dataAdmissao || usuarioAtual.DataAdmissao,
-              senha: passwordData.novaSenha 
+              id: userId, 
+              senhaAtual: passwordData.senhaAtual,
+              novaSenha: passwordData.novaSenha,
+              confirmarNovaSenha: passwordData.confirmarSenha 
           };
 
-          await api.put(`/Usuario/${userId}`, payload);
+          await api.put(`/Usuario/${userId}/alterar-senha`, payload);
 
-        
-          localStorage.setItem('usuario', JSON.stringify(payload));
-
-          alert("Senha alterada com sucesso!");
-          setPasswordData({ senhaAtual: '', novaSenha: '', confirmarSenha: '' });
+          alert("SUCESSO! Senha alterada com sucesso!.\n\nFaça login novamente.");
+          handleLogout();
 
       } catch (error) {
-          console.error("Erro ao alterar senha:", error);
-          alert("Erro ao alterar senha. Verifique os dados e tente novamente.");
+          console.error("Erro detalhado:", error);
+          let mensagemErro = "Erro ao alterar senha.";
+          
+          if (error.response && error.response.data) {
+             
+              if (typeof error.response.data === 'string') {
+                  mensagemErro = error.response.data;
+              } 
+              
+              else if (error.response.data.errors) {
+                  mensagemErro = JSON.stringify(error.response.data.errors);
+              }
+             
+              else if (error.response.data.message) {
+                  mensagemErro = error.response.data.message;
+              }
+          }
+
+          if (error.response?.status === 400) {
+              alert(`O sistema recusou os dados:\n\n${mensagemErro}\n\nDica: Se a mensagem for 'Senha atual incorreta', é porque a senha no banco foi alterada manualmente e não está criptografada.`);
+          } else {
+              alert(`Erro técnico (${error.response?.status}): ${mensagemErro}`);
+          }
       } finally {
           setLoadingPassword(false);
       }
   };
- 
+
   const handleDeleteAccount = async () => {
     let currentUserId = userId;
     

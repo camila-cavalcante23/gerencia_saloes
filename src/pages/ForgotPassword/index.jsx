@@ -2,14 +2,37 @@
 import React, { useState } from 'react';
 import { Mail, ArrowLeft, User, Scissors } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../../services/axios';
 import '../Login/Login.css'; 
+
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Enviando email de recuperação para:", email);
-    alert("Se o e-mail existir, enviaremos um link!");
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      await api.post('/Usuario/esqueceu-senha', {
+        email: email
+      });
+
+      setSuccess('Se o e-mail existir, enviaremos um link para recuperação de senha!');
+      setEmail('');
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 
+        err.response?.data?.erro || 
+        'Erro ao enviar e-mail de recuperação. Verifique se o e-mail está correto.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,6 +53,34 @@ const ForgotPassword = () => {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {error && (
+            <div style={{ 
+              color: '#ef4444', 
+              fontSize: '0.875rem', 
+              marginBottom: '1rem',
+              textAlign: 'center',
+              padding: '0.5rem',
+              backgroundColor: '#fee2e2',
+              borderRadius: '4px'
+            }}>
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div style={{ 
+              color: '#10b981', 
+              fontSize: '0.875rem', 
+              marginBottom: '1rem',
+              textAlign: 'center',
+              padding: '0.5rem',
+              backgroundColor: '#d1fae5',
+              borderRadius: '4px'
+            }}>
+              {success}
+            </div>
+          )}
+
           <div className="input-group">
             <label htmlFor="email" style={{fontWeight: 'bold'}}>E-mail</label>
             <div className="input-wrapper">
@@ -40,15 +91,24 @@ const ForgotPassword = () => {
                 className="login-input"
                 style={{ paddingLeft: '12px' }} 
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError('');
+                  if (success) setSuccess('');
+                }}
                 required
+                disabled={loading}
               />
             </div>
           </div>
 
-          <button type="submit" className="login-button" style={{ background: '#3B82F6' }}>
-            Entrar
-          
+          <button 
+            type="submit" 
+            className="login-button" 
+            style={{ background: '#3B82F6' }}
+            disabled={loading}
+          >
+            {loading ? 'Enviando...' : 'Enviar Link de Recuperação'}
           </button>
         </form>
 

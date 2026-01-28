@@ -155,22 +155,49 @@ const Costs = () => {
   };
   
   const handleSaveEmployee = async () => {
-    if (employeeFormData.name && employeeFormData.salary) {
-      try {
-        const payload = {
-          nome: employeeFormData.name,
-          salario: currencyToNumber(employeeFormData.salary), 
-          telefone: employeeFormData.phone,
-          dataAdmissao: employeeFormData.admissionDate
-        };
-        await api.post('/Funcionario', payload);
-        await loadData(); 
-        handleCloseModal();
-        alert("Funcionário salvo com sucesso!");
-      } catch (error) {
-        console.error(error);
-        alert("Erro ao salvar funcionário");
+    if (!employeeFormData.name || !employeeFormData.salary) {
+      alert("Por favor, preencha o nome e o salário do funcionário.");
+      return;
+    }
+    const hoje = new Date();
+    const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
+    const anoAtual = hoje.getFullYear();
+    const stringMesAtual = `${anoAtual}-${mesAtual}`;
+
+    const funcionarioJaTemSalarioNoMes = employees.some(emp => {
+      const nomeEmp = emp.nome || emp.Nome;
+      const dataAdmissao = emp.dataAdmissao || emp.DataAdmissao;
+      
+      if (nomeEmp !== employeeFormData.name) {
+        return false;
       }
+      if (dataAdmissao) {
+        const dataAdmissaoStr = dataAdmissao.toString().split('T')[0];
+        return dataAdmissaoStr.startsWith(stringMesAtual);
+      }
+      
+      return false;
+    });
+
+    if (funcionarioJaTemSalarioNoMes) {
+      alert(`Este funcionário já possui um salário registrado para o mês atual (${mesAtual}/${anoAtual}). Cada funcionário pode receber apenas um salário por mês.`);
+      return;
+    }
+
+    try {
+      const payload = {
+        nome: employeeFormData.name,
+        salario: currencyToNumber(employeeFormData.salary), 
+        telefone: employeeFormData.phone,
+        dataAdmissao: employeeFormData.admissionDate
+      };
+      await api.post('/Funcionario', payload);
+      await loadData(); 
+      handleCloseModal();
+      alert("Funcionário salvo com sucesso!");
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao salvar funcionário");
     }
   };
 
@@ -396,7 +423,7 @@ const Costs = () => {
             {activeTab === 'employees' && (
               <>
                 <button className="add-employee-btn" onClick={() => handleOpenModal('employee')}>
-                  <Plus size={20} /> Adicionar Funcionário
+                  <Plus size={20} /> Adicionar Salário
                 </button>
 
                 {employees.length > 0 ? (
