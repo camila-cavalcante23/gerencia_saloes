@@ -44,17 +44,19 @@ function Dashboard() {
     try {
       
     const responseTipos = await api.get('/TiposServico');
-     const todosTipos = responseTipos.data;
-     const hiddenIds = JSON.parse(localStorage.getItem('hiddenServices') || '[]');
-     const tiposAtivos = todosTipos.filter(tipo => !hiddenIds.includes(tipo.idTipoServico));
+      const todosTipos = responseTipos.data;
+      const hiddenIds = JSON.parse(localStorage.getItem('hiddenServices') || '[]');
+      const tiposAtivos = todosTipos.filter(tipo => !hiddenIds.includes(tipo.idTipoServico));
 
-setAvailableServices(tiposAtivos);
+    setAvailableServices(tiposAtivos);
 
     
       const responseApp = await api.get('/Servicos/hoje');
       const hojeStr = getLocalDate();
 
-     
+      // Vamos precisar dessa lista para checar nomes vs IDs depois
+      const tiposDisponiveis = tiposAtivos; 
+
       const formattedAppointments = responseApp.data.map(app => {
         const idSeguro = app.idServico || app.IdServico || app.id;
         const clienteSeguro = app.clienteNome || app.ClienteNome || "Cliente";
@@ -63,10 +65,10 @@ setAvailableServices(tiposAtivos);
 
         let idTipoServicoSeguro = app.idTipoServico || app.IdTipoServico || 0;
         if (idTipoServicoSeguro === 0 && tiposDisponiveis.length > 0) {
-             const servicoEncontrado = tiposDisponiveis.find(tipo => 
-                 clienteSeguro.toLowerCase().includes(tipo.nomeServico.toLowerCase())
-             );
-             if (servicoEncontrado) idTipoServicoSeguro = servicoEncontrado.idTipoServico;
+              const servicoEncontrado = tiposDisponiveis.find(tipo => 
+                  clienteSeguro.toLowerCase().includes(tipo.nomeServico.toLowerCase())
+              );
+              if (servicoEncontrado) idTipoServicoSeguro = servicoEncontrado.idTipoServico;
         }
 
         const horarioRaw = app.horario || app.Horario;
@@ -221,6 +223,21 @@ setAvailableServices(tiposAtivos);
         }
     }
   };
+
+  // --- NOVA FUNÇÃO PARA EXCLUIR AGENDAMENTO FUTURO ---
+  const handleDeleteFutureAppointment = async (idToDelete) => {
+    if (window.confirm("Tem certeza que deseja cancelar este agendamento futuro?")) {
+        try {
+            // Usa a mesma rota de serviços, pois os dados vêm de /Servicos/anual
+            await api.delete(`/Servicos/${idToDelete}`);
+            setNextAppointments((prev) => prev.filter(app => app.id !== idToDelete));
+            alert("Agendamento cancelado com sucesso!");
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao cancelar agendamento.");
+        }
+    }
+  };
   
   const updateStatus = async (id, newStatus) => {
       const payload = { id: id, status: newStatus };
@@ -229,7 +246,7 @@ setAvailableServices(tiposAtivos);
           await loadDashboardData();
       } catch (error) {
           console.error(error);
-             alert("Erro ao atualizar status.");
+              alert("Erro ao atualizar status.");
       }
   }
 
@@ -447,16 +464,38 @@ setAvailableServices(tiposAtivos);
         {nextAppointments.length > 0 && (
             <div className="future-section">
                 <div className="future-header">
-                    <CalendarDays size={20} color="#666" />
-                    <h3>Próximos Agendamentos</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CalendarDays size={20} color="#666" />
+                        <h3>Próximos Agendamentos</h3>
+                    </div>
                 </div>
                 <div className="future-grid">
                     {nextAppointments.map(app => (
-                        <div key={app.id} className="future-card">
+                        <div key={app.id} className="future-card" style={{ position: 'relative' }}>
+                       
+                            <button 
+                                onClick={() => handleDeleteFutureAppointment(app.id)}
+                                title="Cancelar Agendamento"
+                                style={{
+                                    position: 'absolute',
+                                    top: '8px',
+                                    right: '8px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <Trash2 size={16} color="#ef4444" />
+                            </button>
+
                             <div className="future-date-badge">
                                 {formatDateShort(app.date)}
                             </div>
-                            <div className="future-info">
+                            <div className="future-info" style={{ paddingRight: '20px' }}>
                                 <p className="future-client">{app.client}</p>
                                 <p className="future-time">{formatTimeShort(app.time)}h</p>
                             </div>

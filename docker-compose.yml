@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # 1. Banco de Dados
+  salaodb:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: salao_db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD} 
+    ports:
+      - "1434:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+
+  # 2. Backend 
+  api:
+    build:
+      context: ./back_gerencia_saloes
+      dockerfile: Dockerfile
+    container_name: salao_api
+    depends_on:
+      - salaodb
+    environment:
+     
+      - ConnectionStrings__SalaoDb=Server=salaodb;Database=SalaoDB;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
+      - Jwt__Key=senha102829393828939389398383938873433ffd
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      - EmailSettings__Host=smtp.gmail.com
+      - EmailSettings__Port=587
+      - EmailSettings__UserName=${EMAIL_USER}
+      - EmailSettings__Password=${EMAIL_PASSWORD}
+      - ClientSettings__Url=http://localhost:5173
+    ports:
+      - "5235:8080"
+
+  # 3. Frontend 
+  web:
+    build:
+      context: ./front_gerecia_saloes
+      dockerfile: Dockerfile
+    container_name: salao_web
+    depends_on:
+      - api
+    environment:
+      - VITE_API_URL=http://localhost:5235
+    ports:
+      - "5173:5173"
+
+volumes:
+  sql_data:
