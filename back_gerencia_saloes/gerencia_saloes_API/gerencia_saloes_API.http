@@ -1,0 +1,6 @@
+@gerencia_saloes_API_HostAddress = http://localhost:5235
+
+GET {{gerencia_saloes_API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

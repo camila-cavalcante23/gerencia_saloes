@@ -1,0 +1,27 @@
+version: '3.4'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Senha12345678@
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlvolume:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__SalaoDb=Server=db;Database=SalaoDB;User Id=sa;Password=Senha12345678@;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=Development
+
+volumes:
+  sqlvolume:
