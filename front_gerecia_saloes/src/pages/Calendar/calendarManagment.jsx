@@ -128,6 +128,8 @@ function CalendarManagment() {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+
+
   const loadServicos = async () => {
     try {
       let endpoint = '/Servicos/anual';
@@ -154,14 +156,46 @@ function CalendarManagment() {
       const response = await api.get(endpoint, { params });
 
       const servicosNormalizados = response.data.map(servico => {
-        const dataRaw = servico.dataServico || servico.DataServico || servico.data;
-        const dataStr = dataRaw ? dataRaw.split('T')[0] : '';
+        const dataRaw = servico.dataServico || servico.DataServico || servico.data || "";
+        const horarioRaw = servico.horario || servico.Horario || "00:00";
+        const observacoes = servico.observacoes || servico.Observacoes || "";
         
+        
+        let timeStr = horarioRaw.includes('T') ? horarioRaw.substring(11, 16) : horarioRaw.substring(0, 5);
+    
+        let dateStr = dataRaw.length >= 10 ? dataRaw.substring(0, 10) : "";
+
+        
+        const isEncaixe = observacoes.includes("Encaixe") || (servico.clienteNome || "").includes("Encaixe");
+        
+        if (isEncaixe && timeStr < "04:00") {
+    
+            const dateObj = new Date(dateStr);
+            dateObj.setDate(dateObj.getDate() + 1); 
+          
+            
+           
+            const d = new Date(dataRaw); 
+            d.setHours(d.getHours() - 3); 
+            
+          
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dateStr = `${year}-${month}-${day}`;
+
+         
+            const h = String(d.getHours()).padStart(2, '0');
+            const m = String(d.getMinutes()).padStart(2, '0');
+            timeStr = `${h}:${m}`;
+        }
+       
+
         return {
           id: servico.idServico || servico.IdServico,
-          data: dataStr,
+          data: dateStr,
           cliente: servico.clienteNome || servico.ClienteNome,
-          horario: servico.horario || servico.Horario,
+          horario: timeStr,
           status: servico.statusServico || servico.StatusServico
         };
       });
@@ -202,12 +236,10 @@ function CalendarManagment() {
   return (
     <div className="calendar-page">
       
- 
       <Navbar />
 
       <main className="main-content">
         
-      
         <div className="content-wrapper">
 
             <div className="page-title-section">

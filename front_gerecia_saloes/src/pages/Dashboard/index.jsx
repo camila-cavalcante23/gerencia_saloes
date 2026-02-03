@@ -26,12 +26,11 @@ function Dashboard() {
 
   const [services, setServices] = useState([]); 
   const [availableServices, setAvailableServices] = useState([]); 
-  
-
   const [nextAppointments, setNextAppointments] = useState([]);
 
   const navigate = useNavigate();
 
+ 
   const getLocalDate = () => {
       const date = new Date();
       const year = date.getFullYear();
@@ -42,34 +41,41 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      
-    const responseTipos = await api.get('/TiposServico');
+
+      const responseTipos = await api.get('/TiposServico');
       const todosTipos = responseTipos.data;
       const hiddenIds = JSON.parse(localStorage.getItem('hiddenServices') || '[]');
       const tiposAtivos = todosTipos.filter(tipo => !hiddenIds.includes(tipo.idTipoServico));
+      
+      setAvailableServices(tiposAtivos);
 
-    setAvailableServices(tiposAtivos);
+   
+      const responseAnual = await api.get('/Servicos/anual'); 
+      const todosAgendamentos = responseAnual.data;
 
     
-      const responseApp = await api.get('/Servicos/hoje');
-      const hojeStr = getLocalDate();
+      const dateObj = new Date();
+    
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const hojeStr = `${year}-${month}-${day}`;
 
-      // Vamos precisar dessa lista para checar nomes vs IDs depois
-      const tiposDisponiveis = tiposAtivos; 
+   
+      const tomorrowObj = new Date(dateObj);
+      tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+      const tYear = tomorrowObj.getFullYear();
+      const tMonth = String(tomorrowObj.getMonth() + 1).padStart(2, '0');
+      const tDay = String(tomorrowObj.getDate()).padStart(2, '0');
+      const amanhaStr = `${tYear}-${tMonth}-${tDay}`;
 
-      const formattedAppointments = responseApp.data.map(app => {
+      const listaProcessada = todosAgendamentos.map(app => {
         const idSeguro = app.idServico || app.IdServico || app.id;
         const clienteSeguro = app.clienteNome || app.ClienteNome || "Cliente";
-        const dataRaw = app.dataServico || app.DataServico || app.data;
-        const dataItemStr = dataRaw ? dataRaw.split('T')[0] : ""; 
-
-        let idTipoServicoSeguro = app.idTipoServico || app.IdTipoServico || 0;
-        if (idTipoServicoSeguro === 0 && tiposDisponiveis.length > 0) {
-              const servicoEncontrado = tiposDisponiveis.find(tipo => 
-                  clienteSeguro.toLowerCase().includes(tipo.nomeServico.toLowerCase())
-              );
-              if (servicoEncontrado) idTipoServicoSeguro = servicoEncontrado.idTipoServico;
-        }
+     
+        const dataRaw = app.dataServico || app.DataServico || app.data || "";
+       
+        let dataItemStr = dataRaw.length >= 10 ? dataRaw.substring(0, 10) : "";
 
         const horarioRaw = app.horario || app.Horario;
         const timeSeguro = horarioRaw 
@@ -80,6 +86,19 @@ function Dashboard() {
         const statusSeguro = app.statusServico || app.StatusServico || app.status || "Agendado";
         const tipoSeguro = app.observacoes === "Encaixe Rápido" ? "encaixe" : "agendado";
         const isCompleted = statusSeguro === "Concluído" || statusSeguro === "Concluido" || statusSeguro === "Encaixe";
+        
+        let idTipoServicoSeguro = app.idTipoServico || app.IdTipoServico || 0;
+        if (idTipoServicoSeguro === 0 && tiposAtivos.length > 0) {
+             const servicoEncontrado = tiposAtivos.find(tipo => 
+                 clienteSeguro.toLowerCase().includes(tipo.nomeServico.toLowerCase())
+             );
+             if (servicoEncontrado) idTipoServicoSeguro = servicoEncontrado.idTipoServico;
+        }
+
+       
+        if (tipoSeguro === "encaixe" && dataItemStr === amanhaStr && timeSeguro < "04:00") {
+            dataItemStr = hojeStr; 
+        }
 
         return {
             id: idSeguro, 
@@ -94,42 +113,33 @@ function Dashboard() {
             serviceTypeId: idTipoServicoSeguro
         };
       })
-      .filter(item => item.id !== undefined && item.id !== null)
-      .filter(item => item.date === hojeStr) 
-      .sort((a, b) => {
-          if (a.completed === b.completed) return a.time.localeCompare(b.time);
-          return a.completed ? 1 : -1; 
-      });
+      .filter(item => item.id !== undefined && item.status !== "Cancelado" && item.status !== "Deletado");
 
-      setServices(formattedAppointments);
+    
+      const agendamentosHoje = listaProcessada
+          .filter(item => item.date === hojeStr)
+          .sort((a, b) => {
+             
+              if (a.completed !== b.completed) {
+                  return a.completed ? 1 : -1;
+              }
+              
+              
+              if (a.type !== b.type) {
+                  return a.type === "agendado" ? -1 : 1;
+              }
 
-      
-      try {
-          const responseAnual = await api.get('/Servicos/anual'); 
-          
-          const futuros = responseAnual.data
-            .map(app => {
-                const dataRaw = app.dataServico || app.DataServico || app.data;
-                const dataItemStr = dataRaw ? dataRaw.split('T')[0] : "";
-                
-                return {
-                    id: app.idServico || app.IdServico,
-                    client: app.clienteNome || app.ClienteNome,
-                    date: dataItemStr,
-                    time: app.horario || app.Horario,
-                    status: app.statusServico || app.StatusServico
-                };
-            })
-            .filter(item => item.date > hojeStr) 
-            .filter(item => item.status !== "Cancelado" && item.status !== "Deletado") 
-            .sort((a, b) => a.date.localeCompare(b.date)); 
+            
+              return a.time.localeCompare(b.time);
+          });
 
-   
-          setNextAppointments(futuros.slice(0, 5)); 
+      const agendamentosFuturos = listaProcessada
+          .filter(item => item.date > hojeStr)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .slice(0, 5);
 
-      } catch (err) {
-          console.warn("Não foi possível carregar futuros", err);
-      }
+      setServices(agendamentosHoje);
+      setNextAppointments(agendamentosFuturos);
 
     } catch (error) {
       console.error("Erro dashboard:", error);
@@ -146,7 +156,6 @@ function Dashboard() {
       if (status === "Encaixe") return "yellow";
       return "purple";
   };
-
 
   const handleAddService = async (newServiceData) => {
     try {
@@ -223,15 +232,12 @@ function Dashboard() {
         }
     }
   };
-
-  // --- NOVA FUNÇÃO PARA EXCLUIR AGENDAMENTO FUTURO ---
+  
   const handleDeleteFutureAppointment = async (idToDelete) => {
     if (window.confirm("Tem certeza que deseja cancelar este agendamento futuro?")) {
         try {
-            // Usa a mesma rota de serviços, pois os dados vêm de /Servicos/anual
             await api.delete(`/Servicos/${idToDelete}`);
             setNextAppointments((prev) => prev.filter(app => app.id !== idToDelete));
-            alert("Agendamento cancelado com sucesso!");
         } catch (error) {
             console.error(error);
             alert("Erro ao cancelar agendamento.");
@@ -246,7 +252,7 @@ function Dashboard() {
           await loadDashboardData();
       } catch (error) {
           console.error(error);
-              alert("Erro ao atualizar status.");
+             alert("Erro ao atualizar status.");
       }
   }
 
@@ -255,19 +261,16 @@ function Dashboard() {
       if(window.confirm("Confirmar falta?")) updateStatus(id, "Não compareceu");
   };
 
-
   const handleConfirmFinishDay = async () => {
     const pendingServices = services.filter(s => s.status === "Agendado");
 
     try {
-       
         if (pendingServices.length > 0) {
             await Promise.all(pendingServices.map(service => 
                 api.put(`/Servicos/${service.id}`, { id: service.id, status: "Concluido" })
             ));
         }
 
-    
         const pendingValue = pendingServices.reduce((acc, curr) => {
              const val = typeof curr.totalValue === 'number' ? curr.totalValue : parseFloat(curr.totalValue) || 0;
              return acc + val;
@@ -277,15 +280,11 @@ function Dashboard() {
         const totalFinal = currentRevenueNum + pendingValue;
         const totalFinalString = totalFinal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-     
         let isAdmin = false;
-
-   
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             try {
                 const userObj = JSON.parse(storedUser);
-          
                 if (userObj.perfil === 'Admin' || userObj.role === 'Admin' || userObj.Perfil === 'Admin') {
                     isAdmin = true;
                 }
@@ -293,12 +292,9 @@ function Dashboard() {
                 console.log("Erro ao ler user do storage");
             }
         }
-
- 
         const storedPerfil = localStorage.getItem('perfil') || localStorage.getItem('role');
         if (storedPerfil === 'Admin') isAdmin = true;
 
-       
         if (isAdmin) {
             alert(`Dia finalizado com sucesso!\nFaturamento Final: ${totalFinalString}`);
             navigate('/lucro'); 
@@ -314,15 +310,11 @@ function Dashboard() {
         alert("Erro ao tentar concluir os agendamentos. Verifique a conexão.");
     }
   
-
-    
     const perfilUsuario = localStorage.getItem('perfil'); 
 
     if (perfilUsuario === 'Admin') {
-      
         navigate('/lucro'); 
     } else {
-
         alert("Dia finalizado com sucesso! Bom descanso.");
         window.location.reload(); 
     }
@@ -347,14 +339,12 @@ function Dashboard() {
   const formattedDate = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   const fullDateString = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-
   const formatDateShort = (dateStr) => {
       if(!dateStr) return "";
       const parts = dateStr.split('-');
       return `${parts[2]}/${parts[1]}`;
   }
   
-
   const formatTimeShort = (timeStr) => {
       if(!timeStr) return "";
       if(timeStr.includes('T')) return timeStr.substring(11, 16);
@@ -460,7 +450,6 @@ function Dashboard() {
           )}
         </div>
 
-    
         {nextAppointments.length > 0 && (
             <div className="future-section">
                 <div className="future-header">
@@ -472,24 +461,28 @@ function Dashboard() {
                 <div className="future-grid">
                     {nextAppointments.map(app => (
                         <div key={app.id} className="future-card" style={{ position: 'relative' }}>
-                       
                             <button 
                                 onClick={() => handleDeleteFutureAppointment(app.id)}
                                 title="Cancelar Agendamento"
+                                className="delete-future-btn"
                                 style={{
                                     position: 'absolute',
                                     top: '8px',
                                     right: '8px',
-                                    background: 'transparent',
-                                    border: 'none',
+                                    background: 'rgba(255, 255, 255, 0.9)',
+                                    border: '1px solid #fee2e2',
+                                    borderRadius: '50%',
                                     cursor: 'pointer',
-                                    padding: '4px',
+                                    width: '28px',
+                                    height: '28px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center'
+                                    justifyContent: 'center',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                    zIndex: 10
                                 }}
                             >
-                                <Trash2 size={16} color="#ef4444" />
+                                <Trash2 size={14} color="#ef4444" />
                             </button>
 
                             <div className="future-date-badge">
