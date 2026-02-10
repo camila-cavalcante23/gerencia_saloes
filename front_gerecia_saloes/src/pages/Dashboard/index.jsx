@@ -8,7 +8,10 @@ import {
   Star,
   Trash2,
   Clock,
-  CalendarDays
+  CalendarDays,
+  Phone,
+  FileText,
+  User 
 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import "./dashboard.css";
@@ -30,7 +33,7 @@ function Dashboard() {
 
   const navigate = useNavigate();
 
- 
+
   const getLocalDate = () => {
       const date = new Date();
       const year = date.getFullYear();
@@ -41,7 +44,7 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-
+     
       const responseTipos = await api.get('/TiposServico');
       const todosTipos = responseTipos.data;
       const hiddenIds = JSON.parse(localStorage.getItem('hiddenServices') || '[]');
@@ -49,19 +52,17 @@ function Dashboard() {
       
       setAvailableServices(tiposAtivos);
 
-   
+    
       const responseAnual = await api.get('/Servicos/anual'); 
       const todosAgendamentos = responseAnual.data;
 
     
       const dateObj = new Date();
-    
       const year = dateObj.getFullYear();
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
       const day = String(dateObj.getDate()).padStart(2, '0');
       const hojeStr = `${year}-${month}-${day}`;
 
-   
       const tomorrowObj = new Date(dateObj);
       tomorrowObj.setDate(tomorrowObj.getDate() + 1);
       const tYear = tomorrowObj.getFullYear();
@@ -69,12 +70,19 @@ function Dashboard() {
       const tDay = String(tomorrowObj.getDate()).padStart(2, '0');
       const amanhaStr = `${tYear}-${tMonth}-${tDay}`;
 
+
       const listaProcessada = todosAgendamentos.map(app => {
         const idSeguro = app.idServico || app.IdServico || app.id;
         const clienteSeguro = app.clienteNome || app.ClienteNome || "Cliente";
-     
-        const dataRaw = app.dataServico || app.DataServico || app.data || "";
+        
+   
+        const telefoneSeguro = app.telefone || app.Telefone || null;
+        const obsSeguro = app.observacoes || app.Observacoes || null;
        
+        const responsavelSeguro = app.responsavel || app.Responsavel || null;
+
+      
+        const dataRaw = app.dataServico || app.DataServico || app.data || "";
         let dataItemStr = dataRaw.length >= 10 ? dataRaw.substring(0, 10) : "";
 
         const horarioRaw = app.horario || app.Horario;
@@ -84,7 +92,7 @@ function Dashboard() {
 
         const valorSeguro = app.valorCobrado || app.ValorCobrado || app.valor || 0;
         const statusSeguro = app.statusServico || app.StatusServico || app.status || "Agendado";
-        const tipoSeguro = app.observacoes === "Encaixe Rápido" ? "encaixe" : "agendado";
+        const tipoSeguro = (obsSeguro === "Encaixe Rápido" || clienteSeguro.includes("Encaixe") || clienteSeguro === "Cliente Avulso") ? "encaixe" : "agendado";
         const isCompleted = statusSeguro === "Concluído" || statusSeguro === "Concluido" || statusSeguro === "Encaixe";
         
         let idTipoServicoSeguro = app.idTipoServico || app.IdTipoServico || 0;
@@ -95,7 +103,7 @@ function Dashboard() {
              if (servicoEncontrado) idTipoServicoSeguro = servicoEncontrado.idTipoServico;
         }
 
-       
+      
         if (tipoSeguro === "encaixe" && dataItemStr === amanhaStr && timeSeguro < "04:00") {
             dataItemStr = hojeStr; 
         }
@@ -105,6 +113,9 @@ function Dashboard() {
             time: timeSeguro,
             date: dataItemStr,
             client: clienteSeguro,
+            phone: telefoneSeguro, 
+            obs: obsSeguro,       
+            responsible: responsavelSeguro,
             status: statusSeguro,
             statusColor: getStatusColor(statusSeguro),
             totalValue: valorSeguro,
@@ -115,21 +126,11 @@ function Dashboard() {
       })
       .filter(item => item.id !== undefined && item.status !== "Cancelado" && item.status !== "Deletado");
 
-    
       const agendamentosHoje = listaProcessada
           .filter(item => item.date === hojeStr)
           .sort((a, b) => {
-             
-              if (a.completed !== b.completed) {
-                  return a.completed ? 1 : -1;
-              }
-              
-              
-              if (a.type !== b.type) {
-                  return a.type === "agendado" ? -1 : 1;
-              }
-
-            
+              if (a.completed !== b.completed) return a.completed ? 1 : -1;
+              if (a.type !== b.type) return a.type === "agendado" ? -1 : 1;
               return a.time.localeCompare(b.time);
           });
 
@@ -174,7 +175,10 @@ function Dashboard() {
             ClienteNome: `${newServiceData.client} - ${newServiceData.service}`,
             ValorCobrado: val || 0, 
             StatusServico: "Agendado",
-            IdTipoServico: serviceId 
+            IdTipoServico: serviceId,
+            Telefone: newServiceData.phone || newServiceData.telefone || null, 
+            Observacoes: newServiceData.observation || newServiceData.observacao || newServiceData.notes || null,
+            Responsavel: newServiceData.responsible || newServiceData.responsavel || newServiceData.professional || null
         };
         
         await api.post('/Servicos/agendar', payload);
@@ -206,11 +210,13 @@ function Dashboard() {
             const payload = {
                 Horario: timeStr, 
                 DataServico: dateStr, 
-                ClienteNome: `Encaixe - ${data.service}`,
+                ClienteNome: `Encaixe - ${data.service}`, 
                 ValorCobrado: valUnitario, 
                 StatusServico: "Concluido", 
                 Observacoes: "Encaixe Rápido", 
-                IdTipoServico: serviceId
+                IdTipoServico: serviceId,
+         
+                Responsavel: data.responsible || data.responsavel || data.professional || null
             };
             await api.post('/Servicos/encaixe', payload);
         }
@@ -420,7 +426,31 @@ function Dashboard() {
                   </div>
                   <div className="service-info">
                     <p className="service-client">{service.client}</p>
-                    <div className="service-tags">
+                    
+                   
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                        {service.phone && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                <Phone size={12} />
+                                <span>{service.phone}</span>
+                            </div>
+                        )}
+                       
+                        {service.responsible && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                <User size={12} />
+                                <span>{service.responsible}</span>
+                            </div>
+                        )}
+                        {service.obs && service.obs !== "Encaixe Rápido" && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                <FileText size={12} />
+                                <span>{service.obs}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="service-tags" style={{ marginTop: '8px' }}>
                       <span className={`service-tag ${service.statusColor}`}>{service.status}</span>
                       {service.completed && service.status !== "Não compareceu" && service.status !== "Concluído" && service.status !== "Concluido" && (
                         <span className="service-tag green">Concluído</span>
