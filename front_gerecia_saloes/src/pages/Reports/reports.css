@@ -1,0 +1,223 @@
+
+.reports-page {
+  background-color: #f4f7fe;
+  height: 100vh;      
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto; 
+  padding-bottom: 40px;
+  position: relative; 
+}
+
+
+.reports-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.reports-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1rem;
+}
+
+.reports-header h2 {
+  font-size: 1.8rem;
+  color: #1a202c;
+  font-weight: 700;
+  margin: 0;
+}
+
+.reports-header p {
+  color: #718096;
+  margin-top: 0.5rem;
+}
+
+
+
+.reports-page .filters-container {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #eef1f6;
+}
+
+.reports-page .date-inputs {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.reports-page .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reports-page .input-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.reports-page .input-group input {
+  padding: 0.6rem 1rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+  color: #2d3748;
+}
+
+.reports-page .input-group input:focus {
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+
+.reports-filter-btn {
+  background-color: #3182ce;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 40px;
+  transition: background-color 0.2s;
+}
+
+.reports-filter-btn:hover {
+  background-color: #2b6cb0;
+}
+
+
+.reports-page .total-badge {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  box-shadow: 0 4px 10px rgba(56, 161, 105, 0.2);
+}
+
+.reports-page .total-badge span {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reports-page .total-badge strong {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+
+.reports-page .table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  border: 1px solid #eef1f6;
+  overflow-x: auto;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.reports-table th {
+  background-color: #f7fafc;
+  padding: 1rem 1.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.reports-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #edf2f7;
+  color: #2d3748;
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+
+.reports-table tr:last-child td {
+  border-bottom: none;
+}
+
+.reports-table tr:hover {
+  background-color: #f8fbff;
+}
+
+
+.badge-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-type.encaixe {
+  background-color: #fffaf0;
+  color: #c05621;
+  border: 1px solid #fbd38d;
+}
+
+.badge-type.normal {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+  border: 1px solid #bee3f8;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+@media (max-width: 768px) {
+  .reports-page .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .reports-page .date-inputs {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .reports-page .input-group {
+    width: 100%;
+  }
+  
+  .reports-page .total-badge {
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

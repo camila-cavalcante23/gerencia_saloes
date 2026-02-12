@@ -6,7 +6,8 @@ import {
   Briefcase, 
   DollarSign, 
   TrendingUp, 
-  User 
+  User,
+  ClipboardList // <--- 1. ADICIONE ESSA IMPORTAÇÃO
 } from 'lucide-react';
 import './navbar.css'; 
 
@@ -19,7 +20,8 @@ const Navbar = () => {
         const usuarioStr = localStorage.getItem('usuario');
         if (usuarioStr) {
           const usuario = JSON.parse(usuarioStr);
-          const perfil = usuario.perfil;
+         
+          const perfil = usuario.perfil || usuario.role || usuario.Perfil; 
           const adminStatus = perfil === 'Admin';
           setIsAdmin(adminStatus);
         } else {
@@ -64,8 +66,6 @@ const Navbar = () => {
 
       <nav className="main-nav">
         
-        
-        
         <NavLink to="/dashboard" className="nav-item">
           <Home size={20} />
           <span>Hoje</span>
@@ -81,8 +81,15 @@ const Navbar = () => {
           <span>Serviços</span>
         </NavLink>
 
+       
         {isAdmin && (
           <>
+            
+            <NavLink to="/relatorios" className="nav-item">
+              <ClipboardList size={20} />
+              <span>Relatórios</span>
+            </NavLink>
+
             <NavLink to="/custos" className="nav-item">
               <DollarSign size={20} />
               <span>Custos</span>

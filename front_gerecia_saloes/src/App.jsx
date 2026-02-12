@@ -11,6 +11,7 @@ import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword"; 
 import ChangePassword from "./pages/ChangePassword"; 
 import Services from "./pages/Services";
+import Reports from "./pages/Reports";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/perfil" element={<Profile />} />
         <Route path="/servicos" element={<Services />} />
         <Route path="/perfil-funcionario" element={<EmployeeProfile />} />
+  <Route path="/relatorios" element={<Reports />} />
       </Routes>
     </BrowserRouter>
   );
