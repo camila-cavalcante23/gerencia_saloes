@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { X, Save, Calendar } from 'lucide-react';
 import './modal.css';
 
-
-const NewAppointmentModal = ({ isOpen, onClose, onSave, servicesList = [] }) => {
+const NewAppointmentModal = ({ isOpen, onClose, onSave, servicesList = [], employeesList = [] }) => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0], 
     time: '',
@@ -11,7 +10,8 @@ const NewAppointmentModal = ({ isOpen, onClose, onSave, servicesList = [] }) => 
     phone: '',
     service: '',
     value: '',
-    notes: ''
+    notes: '',
+    responsible: ''
   });
 
   if (!isOpen) return null;
@@ -21,7 +21,6 @@ const NewAppointmentModal = ({ isOpen, onClose, onSave, servicesList = [] }) => 
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-   
     if (name === 'service') {
         const selectedService = servicesList.find(s => s.nomeServico === value);
         let price = '';
@@ -46,7 +45,8 @@ const NewAppointmentModal = ({ isOpen, onClose, onSave, servicesList = [] }) => 
       return;
     }
     onSave(formData); 
-    setFormData({ date: '', time: '', client: '', phone: '', service: '', value: '', notes: '' });
+    
+    setFormData({ date: '', time: '', client: '', phone: '', service: '', value: '', notes: '', responsible: '' });
     onClose();
   };
 
@@ -142,6 +142,27 @@ const NewAppointmentModal = ({ isOpen, onClose, onSave, servicesList = [] }) => 
                 onChange={handleChange}
               />
             </div>
+          </div>
+
+         
+          <div className="form-group full-width">
+            <label>Responsável (Opcional)</label>
+            <select 
+                className="modal-input default-select" 
+                name="responsible"
+                value={formData.responsible}
+                onChange={handleChange}
+            >
+                <option value="">-- Selecione quem vai atender --</option>
+                {employeesList && employeesList.map((func) => (
+                    <option 
+                      key={func.idUsuario || func.id || func.IdUsuario} 
+                      value={func.nome || func.Nome}
+                    >
+                        {func.nome || func.Nome}
+                    </option>
+                ))}
+            </select>
           </div>
 
           <div className="form-group full-width">

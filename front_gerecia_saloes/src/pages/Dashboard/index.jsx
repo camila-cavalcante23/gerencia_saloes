@@ -30,9 +30,10 @@ function Dashboard() {
   const [services, setServices] = useState([]); 
   const [availableServices, setAvailableServices] = useState([]); 
   const [nextAppointments, setNextAppointments] = useState([]);
+  
+  const [employees, setEmployees] = useState([]);
 
   const navigate = useNavigate();
-
 
   const getLocalDate = () => {
       const date = new Date();
@@ -44,19 +45,28 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-     
       const responseTipos = await api.get('/TiposServico');
       const todosTipos = responseTipos.data;
       const hiddenIds = JSON.parse(localStorage.getItem('hiddenServices') || '[]');
       const tiposAtivos = todosTipos.filter(tipo => !hiddenIds.includes(tipo.idTipoServico));
-      
       setAvailableServices(tiposAtivos);
 
-    
+      try {
+        const responseUsers = await api.get('/Usuario'); 
+        const listaNormalizada = responseUsers.data
+            .filter(u => u.perfil === 'Funcionario' || u.Perfil === 'Funcionario')
+            .map(u => ({
+                id: u.idUsuario || u.IdUsuario || u.id,
+                nome: u.usuario || u.Usuario || u.nome || u.Nome 
+            }));
+        setEmployees(listaNormalizada);
+      } catch (err) {
+        console.error("Erro ao carregar usuários", err);
+      }
+
       const responseAnual = await api.get('/Servicos/anual'); 
       const todosAgendamentos = responseAnual.data;
 
-    
       const dateObj = new Date();
       const year = dateObj.getFullYear();
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -70,18 +80,23 @@ function Dashboard() {
       const tDay = String(tomorrowObj.getDate()).padStart(2, '0');
       const amanhaStr = `${tYear}-${tMonth}-${tDay}`;
 
-
       const listaProcessada = todosAgendamentos.map(app => {
         const idSeguro = app.idServico || app.IdServico || app.id;
         const clienteSeguro = app.clienteNome || app.ClienteNome || "Cliente";
         
-   
         const telefoneSeguro = app.telefone || app.Telefone || null;
-        const obsSeguro = app.observacoes || app.Observacoes || null;
-       
-        const responsavelSeguro = app.responsavel || app.Responsavel || null;
+        let obsSeguro = app.observacoes || app.Observacoes || null;
+        
+        // Recupera responsável legado se necessário
+        let responsavelSeguro = app.responsavel || app.Responsavel || null;
+        if (!responsavelSeguro && obsSeguro && obsSeguro.includes("(Resp:")) {
+            const partes = obsSeguro.split("(Resp:");
+            if (partes.length > 1) {
+                responsavelSeguro = partes[1].replace(")", "").trim();
+                obsSeguro = partes[0].trim(); 
+            }
+        }
 
-      
         const dataRaw = app.dataServico || app.DataServico || app.data || "";
         let dataItemStr = dataRaw.length >= 10 ? dataRaw.substring(0, 10) : "";
 
@@ -103,7 +118,6 @@ function Dashboard() {
              if (servicoEncontrado) idTipoServicoSeguro = servicoEncontrado.idTipoServico;
         }
 
-      
         if (tipoSeguro === "encaixe" && dataItemStr === amanhaStr && timeSeguro < "04:00") {
             dataItemStr = hojeStr; 
         }
@@ -169,6 +183,8 @@ function Dashboard() {
             ? parseFloat(newServiceData.value.replace("R$", "").replace(/\./g, "").replace(",", ".")) 
             : newServiceData.value;
 
+        const responsavelEscolhido = newServiceData.responsible || null;
+
         const payload = {
             Horario: timeStr,      
             DataServico: dateToSave,
@@ -178,7 +194,7 @@ function Dashboard() {
             IdTipoServico: serviceId,
             Telefone: newServiceData.phone || newServiceData.telefone || null, 
             Observacoes: newServiceData.observation || newServiceData.observacao || newServiceData.notes || null,
-            Responsavel: newServiceData.responsible || newServiceData.responsavel || newServiceData.professional || null
+            Responsavel: responsavelEscolhido
         };
         
         await api.post('/Servicos/agendar', payload);
@@ -189,7 +205,7 @@ function Dashboard() {
     }
   };
 
-  const handleAddQuickFitIn = async (data) => {
+ const handleAddQuickFitIn = async (data) => {
     try {
         const now = new Date();
         const horas = now.getHours().toString().padStart(2, '0');
@@ -197,6 +213,7 @@ function Dashboard() {
         const timeStr = `${horas}:${minutos}`; 
         const dateStr = getLocalDate();
 
+        // Encontra o serviço na lista para pegar o ID correto
         const serviceObj = availableServices.find(s => s.nomeServico === data.service);
         const serviceId = serviceObj ? serviceObj.idTipoServico : 0;
 
@@ -210,12 +227,14 @@ function Dashboard() {
             const payload = {
                 Horario: timeStr, 
                 DataServico: dateStr, 
-                ClienteNome: `Encaixe - ${data.service}`, 
+                
+
+                ClienteNome: data.service ? `Cliente Avulso - ${data.service}` : "Cliente Avulso", 
+                
                 ValorCobrado: valUnitario, 
                 StatusServico: "Concluido", 
                 Observacoes: "Encaixe Rápido", 
                 IdTipoServico: serviceId,
-         
                 Responsavel: data.responsible || data.responsavel || data.professional || null
             };
             await api.post('/Servicos/encaixe', payload);
@@ -226,7 +245,7 @@ function Dashboard() {
     } catch (error) {
         if (error.response?.data) alert(`Erro: ${JSON.stringify(error.response.data)}`);
     }
-  };
+};
 
   const handleDeleteService = async (idToDelete) => {
     if (window.confirm("Tem certeza que deseja excluir?")) {
@@ -418,68 +437,78 @@ function Dashboard() {
             </div>
           ) : (
             <div className="services-list">
-              {services.map((service) => (
-                <div key={service.id} className="service-card">
-                  <div className={`service-time-icon ${service.type === "encaixe" ? "encaixe" : ""}`}>
-                    {service.type === "encaixe" ? <Zap size={20} /> : <Clock size={20} />}
-                    <span className="service-time">{service.time}</span>
-                  </div>
-                  <div className="service-info">
-                    <p className="service-client">{service.client}</p>
-                    
-                   
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-                        {service.phone && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
-                                <Phone size={12} />
-                                <span>{service.phone}</span>
-                            </div>
-                        )}
-                       
-                        {service.responsible && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
-                                <User size={12} />
-                                <span>{service.responsible}</span>
-                            </div>
-                        )}
-                        {service.obs && service.obs !== "Encaixe Rápido" && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
-                                <FileText size={12} />
-                                <span>{service.obs}</span>
-                            </div>
-                        )}
-                    </div>
+              {services.map((service) => {
+            
+                const tipoServico = availableServices.find(t => t.idTipoServico === service.serviceTypeId);
+                const nomeDoServico = tipoServico ? tipoServico.nomeServico : "";
 
-                    <div className="service-tags" style={{ marginTop: '8px' }}>
-                      <span className={`service-tag ${service.statusColor}`}>{service.status}</span>
-                      {service.completed && service.status !== "Não compareceu" && service.status !== "Concluído" && service.status !== "Concluido" && (
-                        <span className="service-tag green">Concluído</span>
-                      )}
+                return (
+                  <div key={service.id} className="service-card">
+                    <div className={`service-time-icon ${service.type === "encaixe" ? "encaixe" : ""}`}>
+                      {service.type === "encaixe" ? <Zap size={20} /> : <Clock size={20} />}
+                      <span className="service-time">{service.time}</span>
+                    </div>
+                    <div className="service-info">
+                      <p className="service-client">
+                          {/* SE FOR AVULSO, MOSTRA O SERVIÇO JUNTO */}
+                          {service.client === "Cliente Avulso" && nomeDoServico
+                              ? `Cliente Avulso - ${nomeDoServico}`
+                              : service.client}
+                      </p>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                          {service.phone && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                  <Phone size={12} />
+                                  <span>{service.phone}</span>
+                              </div>
+                          )}
+                          {service.responsible && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                  <User size={12} />
+                                  <span>{service.responsible}</span>
+                              </div>
+                          )}
+                          {service.obs && service.obs !== "Encaixe Rápido" && !service.obs.includes("(Resp:") && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                  <FileText size={12} />
+                                  <span>{service.obs}</span>
+                              </div>
+                          )}
+                      </div>
+
+                      <div className="service-tags" style={{ marginTop: '8px' }}>
+                        <span className={`service-tag ${service.statusColor}`}>{service.status}</span>
+                        {service.completed && service.status !== "Não compareceu" && service.status !== "Concluído" && service.status !== "Concluido" && (
+                          <span className="service-tag green">Concluído</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="service-actions">
+                      <div className="service-value">
+                        <p className="value-label">Valor Total</p>
+                        <p className="value-amount">R$ {typeof service.totalValue === 'number' ? service.totalValue.toFixed(2).replace('.', ',') : service.totalValue}</p>
+                      </div>
+                      <div className="service-buttons">
+                        {!service.completed && (
+                            <>
+                                <button className="service-btn green" onClick={() => handleCompleteService(service.id)}>Concluído</button>
+                                {service.type === "agendado" && (
+                                    <button className="service-btn orange" onClick={() => handleNoShowService(service.id)}>Não compareceu</button>
+                                )}
+                            </>
+                        )}
+                        <button className="service-btn red" onClick={() => handleDeleteService(service.id)}><Trash2 size={14} /> Deletar</button>
+                      </div>
                     </div>
                   </div>
-                  <div className="service-actions">
-                    <div className="service-value">
-                      <p className="value-label">Valor Total</p>
-                      <p className="value-amount">R$ {typeof service.totalValue === 'number' ? service.totalValue.toFixed(2).replace('.', ',') : service.totalValue}</p>
-                    </div>
-                    <div className="service-buttons">
-                      {!service.completed && (
-                          <>
-                              <button className="service-btn green" onClick={() => handleCompleteService(service.id)}>Concluído</button>
-                              {service.type === "agendado" && (
-                                  <button className="service-btn orange" onClick={() => handleNoShowService(service.id)}>Não compareceu</button>
-                              )}
-                          </>
-                      )}
-                      <button className="service-btn red" onClick={() => handleDeleteService(service.id)}><Trash2 size={14} /> Deletar</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
+  
         {nextAppointments.length > 0 && (
             <div className="future-section">
                 <div className="future-header">
@@ -530,8 +559,20 @@ function Dashboard() {
 
       </main>
 
-      <NewAppointmentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleAddService} servicesList={availableServices} />
-      <QuickFitInModal isOpen={isQuickFitModalOpen} onClose={() => setIsQuickFitModalOpen(false)} onSave={handleAddQuickFitIn} servicesList={availableServices} />
+      <NewAppointmentModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={handleAddService} 
+        servicesList={availableServices} 
+        employeesList={employees} 
+      />
+      <QuickFitInModal 
+        isOpen={isQuickFitModalOpen} 
+        onClose={() => setIsQuickFitModalOpen(false)} 
+        onSave={handleAddQuickFitIn} 
+        servicesList={availableServices} 
+        employeesList={employees} 
+      />
       <FinishDayModal isOpen={isFinishModalOpen} onClose={() => setIsFinishModalOpen(false)} onConfirm={handleConfirmFinishDay} summary={{ date: fullDateString, completed: completedCount, noShow: noShowCount, pending: scheduledCount, revenue: todayRevenue }} />
     </div>
   );

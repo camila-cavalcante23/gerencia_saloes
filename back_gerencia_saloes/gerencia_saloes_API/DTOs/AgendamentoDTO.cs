@@ -18,6 +18,8 @@ namespace gerencia_saloes_API.DTOs
 
         public string? Observacoes { get; set; }
 
+        public string? Responsavel { get; set; }
+
         [Required]
         public int IdTipoServico { get; set; }
 

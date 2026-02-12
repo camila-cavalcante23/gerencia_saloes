@@ -2,16 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Zap, Lightbulb } from 'lucide-react';
 import './modal.css';
 
-const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [] }) => {
+const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employeesList = [] }) => {
   const initialFormState = {
     service: '',
     quantity: '1', 
     value: '',
-    professional: ''
+    professional: '' 
   };
 
   const [formData, setFormData] = useState(initialFormState);
-
 
   useEffect(() => {
      if(formData.service) {
@@ -44,6 +43,7 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [] }) => {
       alert("Preencha o Serviço e o Valor.");
       return;
     }
+
     onSave(formData); 
     setFormData(initialFormState); 
     onClose(); 
@@ -88,7 +88,6 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [] }) => {
 
           <div className="form-group full-width">
             <label>Quantidade *</label>
-           
             <input 
               type="number"
               min="1"
@@ -113,16 +112,25 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [] }) => {
             />
           </div>
 
+  
           <div className="form-group full-width">
             <label>Quem fez (Opcional)</label>
-            <input 
-              type="text" 
-              name="professional"
-              className="modal-input" 
-              placeholder="Nome do profissional"
+            <select 
+              className="modal-input default-select" 
+              name="professional" 
               value={formData.professional}
               onChange={handleChange}
-            />
+            >
+              <option value="">-- Selecione quem atendeu --</option>
+              {employeesList && employeesList.map((func) => (
+                  <option 
+                    key={func.idUsuario || func.id || func.IdUsuario} 
+                    value={func.nome || func.Nome}
+                  >
+                    {func.nome || func.Nome}
+                  </option>
+              ))}
+            </select>
           </div>
 
           <div className="tip-box">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Download } from "lucide-react";
+import { Search } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import api from "../../services/axios";
 import "./reports.css"; 
@@ -11,11 +11,50 @@ function Reports() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // --- LÓGICA DE PROCESSAMENTO (Fuso Horário) ---
+  const processData = (data) => {
+    return data.map(service => {
+        const obs = service.observacoes || service.Observacoes || "";
+        const clienteNome = service.clienteNome || service.ClienteNome || "";
+        const isEncaixe = obs.includes("Encaixe") || clienteNome.includes("Encaixe") || clienteNome === "Cliente Avulso";
+
+        // Pega o horário (HH:mm)
+        const horarioRaw = service.horario || service.Horario || "00:00:00";
+        let timeStr = horarioRaw.includes('T') ? horarioRaw.substring(11, 16) : horarioRaw.substring(0, 5);
+
+        // Pega a data original (YYYY-MM-DD)
+        const dataRaw = service.dataServico || service.DataServico || "";
+        
+        // Cria objeto Date para manipulação
+        let dateObj = new Date(dataRaw);
+        
+        // --- CORREÇÃO DE FUSO ---
+        // Se for encaixe e o horário for < 04:00 (madrugada UTC), subtrai 1 dia
+        if (isEncaixe && timeStr < "04:00") {
+            dateObj.setDate(dateObj.getDate() - 1);
+        }
+
+     
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const dataCorrigida = `${year}-${month}-${day}`;
+
+        return {
+            ...service,
+            dataCorrigida: dataCorrigida, 
+            horarioCorrigido: timeStr
+        };
+    });
+  };
+
   const loadData = async () => {
     try {
       const response = await api.get('/Servicos/anual');
-      setServices(response.data);
-      setFilteredServices(response.data); 
+      const dadosTratados = processData(response.data);
+      
+      setServices(dadosTratados);
+      setFilteredServices(dadosTratados); 
     } catch (error) {
       console.error("Erro ao carregar relatórios", error);
     }
@@ -25,7 +64,6 @@ function Reports() {
     loadData();
   }, []);
 
-
   const handleFilter = () => {
     if (!startDate && !endDate) {
       setFilteredServices(services);
@@ -33,10 +71,7 @@ function Reports() {
     }
 
     const filtered = services.filter(service => {
-     
-      const dataRaw = service.dataServico || service.DataServico || "";
-      const serviceDate = dataRaw.split("T")[0];
-
+      const serviceDate = service.dataCorrigida;
       const start = startDate || "0000-01-01";
       const end = endDate || "9999-12-31";
 
@@ -48,7 +83,15 @@ function Reports() {
 
 
   const totalPeriodo = filteredServices.reduce((acc, curr) => {
-    return acc + (curr.valorCobrado || curr.ValorCobrado || 0);
+    const status = curr.statusServico || curr.StatusServico || "";
+    const statusLower = status.toLowerCase();
+    
+ 
+    if (statusLower === "concluido" || statusLower === "concluído") {
+        return acc + (curr.valorCobrado || curr.ValorCobrado || 0);
+    }
+    
+    return acc;
   }, 0);
 
   return (
@@ -61,7 +104,6 @@ function Reports() {
           <p>Histórico completo de agendamentos e encaixes</p>
         </div>
 
-        {/* ÁREA DE FILTROS */}
         <div className="filters-container">
           <div className="date-inputs">
             <div className="input-group">
@@ -80,50 +122,56 @@ function Reports() {
                 onChange={(e) => setEndDate(e.target.value)} 
               />
             </div>
-           <button className="reports-filter-btn" onClick={handleFilter}>
+            <button className="reports-filter-btn" onClick={handleFilter}>
               <Search size={18} /> Filtrar
             </button>
           </div>
           
           <div className="total-badge">
-            <span>Total no Período:</span>
+            <span>Total Realizado (Caixa):</span>
             <strong>{totalPeriodo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
           </div>
         </div>
 
-        {/* TABELA DE DADOS */}
         <div className="table-container">
           <table className="reports-table">
             <thead>
               <tr>
                 <th>Data</th>
-                <th>Cliente</th>
-                <th>Serviço/Obs</th>
+                <th>Cliente / Serviço</th>
                 <th>Tipo</th>
                 <th>Valor</th>
                 <th>Status</th>
+                <th>Responsável</th>
               </tr>
             </thead>
             <tbody>
               {filteredServices.length > 0 ? (
                 filteredServices.map((service) => {
-                  const dataRaw = service.dataServico || service.DataServico;
-                  const dataFormatada = dataRaw ? new Date(dataRaw).toLocaleDateString('pt-BR') : "-";
+               
+                  const [ano, mes, dia] = service.dataCorrigida.split('-');
+                  const dataFormatada = `${dia}/${mes}/${ano}`;
+
                   const obs = service.observacoes || service.Observacoes || "-";
-                  const isEncaixe = obs.includes("Encaixe");
+                  const resp = service.responsavel || service.Responsavel || "-";
+                  const cliente = service.clienteNome || service.ClienteNome;
+                  const isEncaixe = obs.includes("Encaixe") || cliente.includes("Encaixe") || cliente === "Cliente Avulso";
 
                   return (
                     <tr key={service.idServico || service.id}>
                       <td>{dataFormatada}</td>
-                      <td>{service.clienteNome || service.ClienteNome}</td>
-                      <td>{obs}</td>
+                      <td>
+                        <div style={{fontWeight: 'bold'}}>{cliente}</div>
+                        <div style={{fontSize: '0.8rem', color: '#666'}}>{obs}</div>
+                      </td>
                       <td>
                         <span className={`badge-type ${isEncaixe ? "encaixe" : "normal"}`}>
                           {isEncaixe ? "Encaixe" : "Agendado"}
                         </span>
                       </td>
-                      <td>R$ {(service.valorCobrado || 0).toFixed(2)}</td>
+                      <td>R$ {(service.valorCobrado || service.ValorCobrado || 0).toFixed(2)}</td>
                       <td>{service.statusServico || service.StatusServico}</td>
+                      <td>{resp}</td>
                     </tr>
                   );
                 })

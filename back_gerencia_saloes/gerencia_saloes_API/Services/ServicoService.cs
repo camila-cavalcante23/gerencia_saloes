@@ -65,7 +65,7 @@ namespace gerencia_saloes_API.Services
 
                 StatusServico = "Agendado",
                 Quantidade = 1,
-                Responsavel = null,
+               Responsavel = dto.Responsavel,
 
                 IdTipoServico = dto.IdTipoServico,
                 ValorCobrado = dto.ValorCobrado > 0 ? dto.ValorCobrado : tipo.ValorPadrao
