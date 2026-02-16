@@ -91,12 +91,16 @@ namespace gerencia_saloes_API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> AtualizarStatus(int id, AtualizarStatusDTO dto)
+   public async Task<IActionResult> Atualizar(int id, [FromBody] AgendamentoDTO dto)
         {
             try
             {
-                await _service.AtualizarStatus(id, dto.Status);
-                return NoContent();
+                var sucesso = await _service.Atualizar(id, dto);
+        
+        if (!sucesso) 
+            return NotFound(new { message = "Agendamento não encontrado." });
+
+        return NoContent();
             }
             catch (Exception ex)
             {

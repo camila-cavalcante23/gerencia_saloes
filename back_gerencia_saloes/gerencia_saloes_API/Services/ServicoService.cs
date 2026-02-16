@@ -90,17 +90,24 @@ namespace gerencia_saloes_API.Services
             {
                 var servico = new Servico
                 {
-                    ClienteNome = "Cliente Avulso",
-                    Telefone = null,
-                    Observacoes = "Encaixe Rápido",
-                    DataServico = agora.Date,
-                    Horario = agora.TimeOfDay,
-                    StatusServico = "Concluido",
-                    Quantidade = 1,
-                    Responsavel = dto.Responsavel,
-                    IdTipoServico = dto.IdTipoServico,
-
-                    ValorCobrado = valorUnitario
+                   
+            ClienteNome = dto.ClienteNome ?? "Cliente Avulso", 
+            
+           
+            Observacoes = dto.Observacoes ?? "Encaixe Rápido", 
+            
+           
+            Horario = !string.IsNullOrEmpty(dto.Horario) 
+                      ? TimeSpan.Parse(dto.Horario) 
+                      : DateTime.Now.TimeOfDay,
+            
+            DataServico = dto.DataServico.Date,
+            Telefone = null,
+            StatusServico = "Concluido",
+            Quantidade = 1,
+            Responsavel = dto.Responsavel,
+            IdTipoServico = dto.IdTipoServico,
+            ValorCobrado = valorUnitario
                 };
 
                 listaServicosGerados.Add(servico);
@@ -112,21 +119,30 @@ namespace gerencia_saloes_API.Services
             return listaServicosGerados;
         }
 
-        public async Task AtualizarStatus(int id, string novoStatus)
-        {
-            var servico = await _context.Servicos.FindAsync(id);
+       public async Task<bool> Atualizar(int id, AgendamentoDTO dto)
+{
+    var servico = await _context.Servicos.FindAsync(id);
 
-            if (servico == null)
-                throw new Exception("Serviço não encontrado.");
+    if (servico == null) return false;
 
-            if (servico.StatusServico != "Agendado")
-            {
-                throw new Exception("Apenas serviços agendados podem ter o status alterado.");
-            }
 
-            servico.StatusServico = novoStatus;
-            await _context.SaveChangesAsync();
-        }
+    if (!string.IsNullOrEmpty(dto.ClienteNome))
+    {
+        servico.ClienteNome = dto.ClienteNome;
+        servico.Telefone = dto.Telefone;
+        servico.Observacoes = dto.Observacoes;
+        servico.DataServico = dto.DataServico;
+        servico.Horario = TimeSpan.Parse(dto.Horario);
+        servico.IdTipoServico = dto.IdTipoServico;
+        servico.ValorCobrado = dto.ValorCobrado;
+        servico.Responsavel = dto.Responsavel;
+    }
+    
+
+
+    await _context.SaveChangesAsync();
+    return true;
+}
 
         public async Task<bool> Excluir(int id)
         {

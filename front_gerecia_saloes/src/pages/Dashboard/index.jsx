@@ -106,9 +106,14 @@ function Dashboard() {
             : "00:00";
 
         const valorSeguro = app.valorCobrado || app.ValorCobrado || app.valor || 0;
-        const statusSeguro = app.statusServico || app.StatusServico || app.status || "Agendado";
-        const tipoSeguro = (obsSeguro === "Encaixe Rápido" || clienteSeguro.includes("Encaixe") || clienteSeguro === "Cliente Avulso") ? "encaixe" : "agendado";
-        const isCompleted = statusSeguro === "Concluído" || statusSeguro === "Concluido" || statusSeguro === "Encaixe";
+      const statusSeguro = app.statusServico || app.StatusServico || app.status || "Agendado";
+       const tipoSeguro = (
+        clienteSeguro.startsWith("Cliente Avulso") || 
+        obsSeguro === "Encaixe Rápido" || 
+        statusSeguro === "Encaixe"
+    ) ? "encaixe" : "agendado";
+
+    const isCompleted = statusSeguro === "Concluído" || statusSeguro === "Concluido" || statusSeguro === "Encaixe";
         
         let idTipoServicoSeguro = app.idTipoServico || app.IdTipoServico || 0;
         if (idTipoServicoSeguro === 0 && tiposAtivos.length > 0) {
@@ -158,8 +163,13 @@ function Dashboard() {
 
     } catch (error) {
       console.error("Erro dashboard:", error);
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            localStorage.clear(); 
+            navigate('/login');   
+        }
+      
     }
-  };
+};
 
   useEffect(() => {
     loadDashboardData();
@@ -205,15 +215,15 @@ function Dashboard() {
     }
   };
 
- const handleAddQuickFitIn = async (data) => {
+const handleAddQuickFitIn = async (data) => {
     try {
-        const now = new Date();
-        const horas = now.getHours().toString().padStart(2, '0');
-        const minutos = now.getMinutes().toString().padStart(2, '0');
+        
+        const agora = new Date();
+        const horas = String(agora.getHours()).padStart(2, '0');
+        const minutos = String(agora.getMinutes()).padStart(2, '0');
         const timeStr = `${horas}:${minutos}`; 
         const dateStr = getLocalDate();
 
-        // Encontra o serviço na lista para pegar o ID correto
         const serviceObj = availableServices.find(s => s.nomeServico === data.service);
         const serviceId = serviceObj ? serviceObj.idTipoServico : 0;
 
@@ -227,15 +237,13 @@ function Dashboard() {
             const payload = {
                 Horario: timeStr, 
                 DataServico: dateStr, 
-                
-
                 ClienteNome: data.service ? `Cliente Avulso - ${data.service}` : "Cliente Avulso", 
-                
                 ValorCobrado: valUnitario, 
                 StatusServico: "Concluido", 
-                Observacoes: "Encaixe Rápido", 
+                Observacoes: data.observation || data.observacao || "Encaixe Rápido", 
+                
                 IdTipoServico: serviceId,
-                Responsavel: data.responsible || data.responsavel || data.professional || null
+                Responsavel: data.professional || data.responsible || null
             };
             await api.post('/Servicos/encaixe', payload);
         }
@@ -450,32 +458,37 @@ function Dashboard() {
                     </div>
                     <div className="service-info">
                       <p className="service-client">
-                          {/* SE FOR AVULSO, MOSTRA O SERVIÇO JUNTO */}
+                     
                           {service.client === "Cliente Avulso" && nomeDoServico
                               ? `Cliente Avulso - ${nomeDoServico}`
                               : service.client}
                       </p>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-                          {service.phone && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
-                                  <Phone size={12} />
-                                  <span>{service.phone}</span>
-                              </div>
-                          )}
-                          {service.responsible && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
-                                  <User size={12} />
-                                  <span>{service.responsible}</span>
-                              </div>
-                          )}
-                          {service.obs && service.obs !== "Encaixe Rápido" && !service.obs.includes("(Resp:") && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
-                                  <FileText size={12} />
-                                  <span>{service.obs}</span>
-                              </div>
-                          )}
-                      </div>
+                   
+<div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+    {service.phone && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+            <Phone size={12} />
+            <span>{service.phone}</span>
+        </div>
+    )}
+    {service.responsible && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+            <User size={12} />
+            <span>{service.responsible}</span>
+        </div>
+    )}
+    
+  
+    {service.obs && 
+     service.obs !== "Encaixe Rápido" && 
+     service.obs !== "nada" && 
+     !service.obs.includes("(Resp:") && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#4f46e5', fontWeight: '500' }}>
+            <FileText size={12} />
+            <span>{service.obs}</span>
+        </div>
+    )}
+</div>
 
                       <div className="service-tags" style={{ marginTop: '8px' }}>
                         <span className={`service-tag ${service.statusColor}`}>{service.status}</span>

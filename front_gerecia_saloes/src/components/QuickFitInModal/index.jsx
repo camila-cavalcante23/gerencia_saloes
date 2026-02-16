@@ -7,7 +7,8 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
     service: '',
     quantity: '1', 
     value: '',
-    professional: '' 
+    professional: '',
+    observation: '' 
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -112,7 +113,6 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
             />
           </div>
 
-  
           <div className="form-group full-width">
             <label>Quem fez (Opcional)</label>
             <select 
@@ -131,6 +131,18 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
                   </option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group full-width">
+            <label>Observações (Opcional)</label>
+            <textarea 
+              name="observation"
+              className="modal-textarea"
+              placeholder="Detalhes sobre o atendimento..."
+              value={formData.observation}
+              onChange={handleChange}
+              rows="2"
+            ></textarea>
           </div>
 
           <div className="tip-box">

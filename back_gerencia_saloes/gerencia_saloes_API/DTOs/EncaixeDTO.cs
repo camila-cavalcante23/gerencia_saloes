@@ -13,5 +13,11 @@ namespace gerencia_saloes_API.DTOs
         public string? Responsavel { get; set; }
 
         public decimal? ValorCobrado { get; set; }
+
+
+        public string? ClienteNome { get; set; }
+    public string? Observacoes { get; set; }
+    public string? Horario { get; set; }
+    public DateTime DataServico { get; set; }
     }
 }

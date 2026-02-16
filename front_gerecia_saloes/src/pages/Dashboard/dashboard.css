@@ -126,7 +126,15 @@
   flex-shrink: 0;
   gap: 0.25rem;
 }
-.service-time-icon.encaixe { background-color: #FF6B35; }
+
+
+
+.service-time-icon.encaixe {
+    background-color: #FF8C42; 
+    color: white; 
+    border: none;
+}
+
 .service-time { 
   font-size: 0.875rem; 
   font-weight: 600; 
