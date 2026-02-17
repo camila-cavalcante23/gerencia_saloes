@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Zap, Lightbulb } from 'lucide-react';
 import './modal.css';
 
@@ -12,6 +12,27 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+
+  const filteredServices = servicesList.filter(item =>
+    item.nomeServico.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+ 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
      if(formData.service) {
@@ -33,6 +54,12 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
 
   const handleModalClick = (e) => e.stopPropagation();
 
+  const handleSelectService = (service) => {
+    setFormData(prev => ({ ...prev, service: service.nomeServico }));
+    setSearchTerm(service.nomeServico);
+    setShowDropdown(false);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -46,7 +73,8 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
     }
 
     onSave(formData); 
-    setFormData(initialFormState); 
+    setFormData(initialFormState);
+    setSearchTerm('');
     onClose(); 
   };
 
@@ -70,21 +98,34 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
 
         <form className="modal-form" onSubmit={handleSubmit}>
           
-          <div className="form-group full-width">
+          
+          <div className="form-group full-width" ref={dropdownRef} style={{ position: 'relative' }}>
             <label>Serviço realizado *</label>
-            <select 
-              className="modal-input default-select"
-              name="service"
-              value={formData.service}
-              onChange={handleChange}
-            >
-              <option value="" disabled>Selecione o tipo de Serviço</option>
-              {servicesList.map((item) => (
-                    <option key={item.idTipoServico} value={item.nomeServico}>
-                        {item.nomeServico}
-                    </option>
-              ))}
-            </select>
+            <input 
+              type="text" 
+              className="modal-input" 
+              placeholder="Digite para buscar (ex: cort, unh)" 
+              value={searchTerm}
+              autoComplete="off"
+              onFocus={() => setShowDropdown(true)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowDropdown(true);
+              }}
+            />
+            
+            {showDropdown && (
+              <ul className="dropdown-search">
+                {filteredServices.map((item) => (
+                  <li key={item.idTipoServico} onClick={() => handleSelectService(item)}>
+                    {item.nomeServico}
+                  </li>
+                ))}
+                {filteredServices.length === 0 && (
+                  <li className="no-results">Nenhum serviço encontrado</li>
+                )}
+              </ul>
+            )}
           </div>
 
           <div className="form-group full-width">
@@ -115,34 +156,17 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
 
           <div className="form-group full-width">
             <label>Quem fez (Opcional)</label>
-            <select 
-              className="modal-input default-select" 
-              name="professional" 
-              value={formData.professional}
-              onChange={handleChange}
-            >
+            <select className="modal-input default-select" name="professional" value={formData.professional} onChange={handleChange}>
               <option value="">-- Selecione quem atendeu --</option>
               {employeesList && employeesList.map((func) => (
-                  <option 
-                    key={func.idUsuario || func.id || func.IdUsuario} 
-                    value={func.nome || func.Nome}
-                  >
-                    {func.nome || func.Nome}
-                  </option>
+                  <option key={func.idUsuario || func.id} value={func.nome || func.Nome}>{func.nome || func.Nome}</option>
               ))}
             </select>
           </div>
 
           <div className="form-group full-width">
             <label>Observações (Opcional)</label>
-            <textarea 
-              name="observation"
-              className="modal-textarea"
-              placeholder="Detalhes sobre o atendimento..."
-              value={formData.observation}
-              onChange={handleChange}
-              rows="2"
-            ></textarea>
+            <textarea name="observation" className="modal-textarea" placeholder="Detalhes sobre o atendimento..." value={formData.observation} onChange={handleChange} rows="2"></textarea>
           </div>
 
           <div className="tip-box">
@@ -153,12 +177,9 @@ const QuickFitInModal = ({ isOpen, onClose, onSave, servicesList = [], employees
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn-cancel" onClick={onClose}>
-              Cancelar
-            </button>
+            <button type="button" className="btn-cancel" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn-save green">
-              <Save size={18} />
-              Registrar Encaixe
+              <Save size={18} /> Registrar Encaixe
             </button>
           </div>
         </form>
