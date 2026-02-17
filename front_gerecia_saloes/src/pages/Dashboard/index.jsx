@@ -107,11 +107,11 @@ function Dashboard() {
 
         const valorSeguro = app.valorCobrado || app.ValorCobrado || app.valor || 0;
       const statusSeguro = app.statusServico || app.StatusServico || app.status || "Agendado";
-       const tipoSeguro = (
-        clienteSeguro.startsWith("Cliente Avulso") || 
-        obsSeguro === "Encaixe Rápido" || 
-        statusSeguro === "Encaixe"
-    ) ? "encaixe" : "agendado";
+ const tipoSeguro = (
+    clienteSeguro.startsWith("Cliente Avulso") || 
+    statusSeguro === "Encaixe" ||
+    statusSeguro === "Concluido" && clienteSeguro.includes("Cliente Avulso") 
+) ? "encaixe" : "";
 
     const isCompleted = statusSeguro === "Concluído" || statusSeguro === "Concluido" || statusSeguro === "Encaixe";
         

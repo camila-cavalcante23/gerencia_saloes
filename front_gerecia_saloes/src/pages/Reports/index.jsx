@@ -11,7 +11,6 @@ function Reports() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // --- LÓGICA DE PROCESSAMENTO (Fuso Horário) ---
   const processData = (data) => {
     return data.map(service => {
         const obs = service.observacoes || service.Observacoes || "";
@@ -24,12 +23,8 @@ function Reports() {
 
         // Pega a data original (YYYY-MM-DD)
         const dataRaw = service.dataServico || service.DataServico || "";
-        
-        // Cria objeto Date para manipulação
         let dateObj = new Date(dataRaw);
         
-        // --- CORREÇÃO DE FUSO ---
-        // Se for encaixe e o horário for < 04:00 (madrugada UTC), subtrai 1 dia
         if (isEncaixe && timeStr < "04:00") {
             dateObj.setDate(dateObj.getDate() - 1);
         }
@@ -155,7 +150,7 @@ function Reports() {
                   const obs = service.observacoes || service.Observacoes || "-";
                   const resp = service.responsavel || service.Responsavel || "-";
                   const cliente = service.clienteNome || service.ClienteNome;
-                  const isEncaixe = obs.includes("Encaixe") || cliente.includes("Encaixe") || cliente === "Cliente Avulso";
+                  const isEncaixe = cliente.includes("Cliente Avulso");
 
                   return (
                     <tr key={service.idServico || service.id}>
