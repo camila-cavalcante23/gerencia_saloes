@@ -136,6 +136,8 @@ namespace gerencia_saloes_API.Services
         servico.IdTipoServico = dto.IdTipoServico;
         servico.ValorCobrado = dto.ValorCobrado;
         servico.Responsavel = dto.Responsavel;
+
+        servico.StatusServico = dto.StatusServico;
     }
     
 

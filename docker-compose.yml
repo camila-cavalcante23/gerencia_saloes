@@ -7,7 +7,8 @@ services:
     container_name: salao_db
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${DB_PASSWORD} 
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD}
+      - TZ=America/Sao_Paulo  
     ports:
       - "1434:1433"
     volumes:
@@ -22,11 +23,10 @@ services:
     depends_on:
       - salaodb
     environment:
-     
+      - TZ=America/Sao_Paulo  # <--- ADICIONADO AQUI
       - ConnectionStrings__SalaoDb=Server=salaodb;Database=SalaoDB;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
       - Jwt__Key=senha102829393828939389398383938873433ffd
       - ASPNETCORE_ENVIRONMENT=Development
-      
       - EmailSettings__Host=smtp.gmail.com
       - EmailSettings__Port=587
       - EmailSettings__UserName=${EMAIL_USER}
@@ -44,6 +44,7 @@ services:
     depends_on:
       - api
     environment:
+      - TZ=America/Sao_Paulo  # <--- ADICIONADO AQUI
       - VITE_API_URL=http://localhost:5235
     ports:
       - "5173:5173"

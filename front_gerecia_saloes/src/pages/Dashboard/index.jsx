@@ -36,12 +36,12 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const getLocalDate = () => {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`; 
-  };
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`; 
+};
 
   const loadDashboardData = async () => {
     try {
@@ -87,7 +87,7 @@ function Dashboard() {
         const telefoneSeguro = app.telefone || app.Telefone || null;
         let obsSeguro = app.observacoes || app.Observacoes || null;
         
-        // Recupera responsável legado se necessário
+    
         let responsavelSeguro = app.responsavel || app.Responsavel || null;
         if (!responsavelSeguro && obsSeguro && obsSeguro.includes("(Resp:")) {
             const partes = obsSeguro.split("(Resp:");
@@ -107,11 +107,13 @@ function Dashboard() {
 
         const valorSeguro = app.valorCobrado || app.ValorCobrado || app.valor || 0;
       const statusSeguro = app.statusServico || app.StatusServico || app.status || "Agendado";
- const tipoSeguro = (
+ 
+
+      const tipoSeguro = (
     clienteSeguro.startsWith("Cliente Avulso") || 
     statusSeguro === "Encaixe" ||
-    statusSeguro === "Concluido" && clienteSeguro.includes("Cliente Avulso") 
-) ? "encaixe" : "";
+    (statusSeguro === "Concluido" && clienteSeguro.includes("Cliente Avulso")) 
+) ? "encaixe" : "agendado";
 
     const isCompleted = statusSeguro === "Concluído" || statusSeguro === "Concluido" || statusSeguro === "Encaixe";
         
@@ -176,11 +178,13 @@ function Dashboard() {
   }, []);
 
   const getStatusColor = (status) => {
-      if (status === "Concluído" || status === "Concluido") return "green";
-      if (status === "Não compareceu") return "red";
-      if (status === "Encaixe") return "yellow";
-      return "purple";
-  };
+    if (!status) return "purple";
+    const s = status.toLowerCase();
+    if (s.includes("concluido") || s.includes("concluído")) return "green";
+    if (s.includes("não compareceu") || s.includes("falta")) return "red";
+    if (s.includes("encaixe")) return "yellow";
+    return "purple";
+};
 
   const handleAddService = async (newServiceData) => {
     try {
@@ -278,16 +282,39 @@ const handleAddQuickFitIn = async (data) => {
     }
   };
   
-  const updateStatus = async (id, newStatus) => {
-      const payload = { id: id, status: newStatus };
-      try {
-          await api.put(`/Servicos/${id}`, payload);
-          await loadDashboardData();
-      } catch (error) {
-          console.error(error);
-             alert("Erro ao atualizar status.");
-      }
-  }
+const updateStatus = async (id, newStatus) => {
+    const s = services.find(item => item.id === id) || nextAppointments.find(item => item.id === id);
+    if (!s) return;
+
+
+    const dataFormatada = new Date(s.date).toISOString();
+
+    const payload = {
+        ClienteNome: s.client,
+        DataServico: dataFormatada,
+        Horario: s.time,
+        StatusServico: newStatus, 
+        IdTipoServico: s.serviceTypeId || 0,
+        ValorCobrado: s.totalValue,
+        Telefone: s.phone || "",
+        Observacoes: s.obs || "",
+        Responsavel: s.responsible || ""
+    };
+
+    try {
+     
+        const response = await api.put(`/Servicos/${id}`, payload);
+        
+        if (response.status === 200 || response.status === 204) {
+            await loadDashboardData();
+        }
+    } catch (error) {
+        console.error("Erro detalhado:", error.response?.data);
+     
+        alert("Erro ao salvar: " + JSON.stringify(error.response?.data));
+        await loadDashboardData(); 
+    }
+};
 
   const handleCompleteService = (id) => updateStatus(id, "Concluido"); 
   const handleNoShowService = (id) => {
@@ -299,8 +326,19 @@ const handleAddQuickFitIn = async (data) => {
 
     try {
         if (pendingServices.length > 0) {
-            await Promise.all(pendingServices.map(service => 
-                api.put(`/Servicos/${service.id}`, { id: service.id, status: "Concluido" })
+            await Promise.all(pendingServices.map(s => 
+                api.put(`/Servicos/${s.id}`, { 
+                    ClienteNome: s.client,
+                    DataServico: s.date,
+                    Horario: s.time,
+                    IdTipoServico: s.serviceTypeId,
+                    StatusServico: "Concluido",
+                    ValorCobrado: s.totalValue,
+                   
+                    Telefone: s.phone || "",
+                    Responsavel: s.responsible || "",
+                    Observacoes: s.obs || ""
+                })
             ));
         }
 

@@ -24,5 +24,7 @@ namespace gerencia_saloes_API.DTOs
         public int IdTipoServico { get; set; }
 
         public decimal ValorCobrado { get; set; }
+
+        public string? StatusServico { get; set; }
     }
 }
